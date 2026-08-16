@@ -1,4 +1,48 @@
 @import "tailwindcss";
+
+@theme inline {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --color-background: #090a08;
+  --color-foreground: #f7f4e9;
+  --color-card: #13140f;
+  --color-card-foreground: #f7f4e9;
+  --color-popover: #171712;
+  --color-popover-foreground: #f7f4e9;
+  --color-primary: #dba71d;
+  --color-primary-foreground: #120d02;
+  --color-secondary: #22231b;
+  --color-secondary-foreground: #f7f4e9;
+  --color-muted: #25251e;
+  --color-muted-foreground: #a4a296;
+  --color-accent: #2e2d20;
+  --color-accent-foreground: #fff8de;
+  --color-border: #4a421e;
+  --color-input: #29291f;
+  --color-ring: #e9bf43;
+  --color-destructive: #f14a4a;
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { background: #090a08; }
+  body { @apply bg-background text-foreground font-sans antialiased; }
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+}
+
+.grid-noise {
+  background-image: linear-gradient(rgba(226, 179, 36, 0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(226, 179, 36, 0.045) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.gold-line { background: linear-gradient(90deg, transparent, #b98212 20%, #ffe184 50%, #b98212 80%, transparent); }
+.gold-text { background: linear-gradient(100deg, #8f6110 0%, #f6d775 45%, #b77809 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.metal-border { border: 1px solid rgba(222, 173, 37, 0.55); box-shadow: inset 0 0 0 1px rgba(255, 238, 154, 0.06), 0 20px 65px rgba(0, 0, 0, 0.28); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .rise-in { animation: rise-in 260ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+  @keyframes rise-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+}
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));

@@ -3,16 +3,22 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import DashboardLayout from "./components/DashboardLayout";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import UploadTrades from "./pages/UploadTrades";
+import WeeklyTrades from "./pages/WeeklyTrades";
+import WeeklySummary from "./pages/WeeklySummary";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/upload"} component={UploadTrades} />
+      <Route path={"/trades"} component={WeeklyTrades} />
+      <Route path={"/summary"} component={WeeklySummary} />
       <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
   );
@@ -27,12 +33,12 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider
-        defaultTheme="light"
+        defaultTheme="dark"
         // switchable
       >
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <DashboardLayout><Router /></DashboardLayout>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

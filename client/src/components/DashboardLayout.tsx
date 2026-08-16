@@ -21,15 +21,17 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { ClipboardList, Crown, LayoutDashboard, LogOut, PanelLeft, Sparkles, UploadCloud } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: UploadCloud, label: "Daily upload", path: "/upload" },
+  { icon: ClipboardList, label: "Weekly log", path: "/trades" },
+  { icon: Sparkles, label: "Weekly summary", path: "/summary" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -58,23 +60,14 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-6">
-            <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Sign in to continue
-            </h1>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
-            </p>
-          </div>
-          <Button
-            onClick={() => startLogin()}
-            size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
-          >
-            Sign in
-          </Button>
+      <div className="grid-noise min-h-screen flex items-center justify-center p-5">
+        <div className="metal-border rise-in w-full max-w-xl overflow-hidden rounded-2xl bg-[#11120d] p-8 text-center md:p-12">
+          <div className="mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#dba71d]/60 bg-[#1c1808] text-[#f3c95a] shadow-[0_0_45px_rgba(219,167,29,.15)]"><Crown className="h-8 w-8" /></div>
+          <p className="gold-text font-display text-xl tracking-[0.2em]">BASHFX</p>
+          <h1 className="mt-2 font-display text-5xl tracking-wide text-white md:text-6xl">TRADE JOURNAL</h1>
+          <div className="gold-line mx-auto my-6 h-px w-28" />
+          <p className="mx-auto max-w-sm text-sm leading-6 text-[#b7b4a8]">A private workspace for uploading daily Forex results, reviewing AI extraction, and building your weekly BashFX summary.</p>
+          <Button onClick={() => startLogin()} size="lg" className="mt-8 h-12 w-full bg-[#dba71d] font-bold text-[#130e03] shadow-[0_8px_30px_rgba(219,167,29,.2)] hover:bg-[#f3c95a]">Sign in to your journal</Button>
         </div>
       </div>
     );
@@ -157,7 +150,7 @@ function DashboardLayoutContent({
           className="border-r-0"
           disableTransition={isResizing}
         >
-          <SidebarHeader className="h-16 justify-center">
+          <SidebarHeader className="h-20 justify-center">
             <div className="flex items-center gap-3 px-2 transition-all w-full">
               <button
                 onClick={toggleSidebar}
@@ -168,15 +161,14 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold tracking-tight truncate">
-                    Navigation
-                  </span>
+                  <Crown className="h-5 w-5 text-[#e4b933]" />
+                  <span className="font-display text-xl tracking-[0.12em] text-white truncate">BASHFX</span>
                 </div>
               ) : null}
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0">
+          <SidebarContent className="gap-0 px-1 pt-4">
             <SidebarMenu className="px-2 py-1">
               {menuItems.map(item => {
                 const isActive = location === item.path;
@@ -186,7 +178,7 @@ function DashboardLayoutContent({
                       isActive={isActive}
                       onClick={() => setLocation(item.path)}
                       tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
+                      className={`h-11 transition-all font-medium ${isActive ? "bg-[#dba71d]/12 text-[#f4cf66]" : "text-[#a9a69a] hover:text-white"}`}
                     >
                       <item.icon
                         className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
@@ -199,7 +191,7 @@ function DashboardLayoutContent({
             </SidebarMenu>
           </SidebarContent>
 
-          <SidebarFooter className="p-3">
+          <SidebarFooter className="border-t border-[#4a421e]/60 p-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -242,20 +234,20 @@ function DashboardLayoutContent({
 
       <SidebarInset>
         {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+          <div className="flex border-b border-[#4a421e]/60 h-16 items-center justify-between bg-[#11120d]/95 px-3 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? "Menu"}
+                  <span className="font-display text-xl tracking-wide text-foreground">
+                    {activeMenuItem?.label ?? "BashFX"}
                   </span>
                 </div>
               </div>
             </div>
           </div>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 bg-[#090a08] p-4 md:p-7">{children}</main>
       </SidebarInset>
     </>
   );

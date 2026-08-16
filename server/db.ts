@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, tradeDocuments, trades, users, weeklySummaries } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,103 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+function getInsertedId(result: unknown): number {
+  const first = Array.isArray(result) ? result[0] : result;
+  const id = (first as { insertId?: number | string } | undefined)?.insertId;
+  if (id === undefined) throw new Error("Database insert did not return an id");
+  return Number(id);
+}
+
+export async function createTradeDocument(input: {
+  userId: number;
+  fileName: string;
+  mimeType: string;
+  storageKey: string;
+  tradingDay: Date;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const result = await db.insert(tradeDocuments).values({ ...input, extractionStatus: "pending" });
+  return getInsertedId(result);
+}
+
+export async function setDocumentExtractionStatus(documentId: number, userId: number, status: "completed" | "failed") {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.update(tradeDocuments).set({ extractionStatus: status }).where(and(eq(tradeDocuments.id, documentId), eq(tradeDocuments.userId, userId)));
+}
+
+export async function createTrades(input: Array<{
+  userId: number;
+  documentId: number;
+  tradingDay: Date;
+  pair: string;
+  session: string;
+  direction: string;
+  entry: string;
+  exit: string;
+  pips: number | null;
+  profit: number | null;
+  currency: string;
+  result: string;
+  notes: string;
+  confidence: number;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  if (input.length === 0) return [];
+  await db.insert(trades).values(input);
+  return getTradesForDocument(input[0].documentId, input[0].userId);
+}
+
+export async function getTradesForDocument(documentId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return db.select().from(trades).where(and(eq(trades.documentId, documentId), eq(trades.userId, userId))).orderBy(desc(trades.id));
+}
+
+export async function getTradesForWeek(userId: number, weekStart: Date, weekEnd: Date) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return db.select().from(trades).where(and(eq(trades.userId, userId), gte(trades.tradingDay, weekStart), lt(trades.tradingDay, weekEnd))).orderBy(desc(trades.tradingDay), desc(trades.id));
+}
+
+export async function updateTradeForUser(userId: number, tradeId: number, values: {
+  pair: string;
+  session: string;
+  direction: string;
+  entry: string;
+  exit: string;
+  pips: number | null;
+  profit: number | null;
+  currency: string;
+  result: string;
+  notes: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.update(trades).set(values).where(and(eq(trades.id, tradeId), eq(trades.userId, userId)));
+  const rows = await db.select().from(trades).where(and(eq(trades.id, tradeId), eq(trades.userId, userId))).limit(1);
+  if (!rows[0]) throw new Error("Trade not found");
+  return rows[0];
+}
+
+export async function createWeeklySummary(userId: number, weekStart: Date, imageKey: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const result = await db.insert(weeklySummaries).values({ userId, weekStart, imageKey });
+  return getInsertedId(result);
+}
+
+export async function getWeeklySummaries(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return db.select().from(weeklySummaries).where(eq(weeklySummaries.userId, userId)).orderBy(desc(weeklySummaries.createdAt));
+}
+
+export async function getWeeklySummaryForUser(userId: number, summaryId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const rows = await db.select().from(weeklySummaries).where(and(eq(weeklySummaries.id, summaryId), eq(weeklySummaries.userId, userId))).limit(1);
+  return rows[0];
+}
