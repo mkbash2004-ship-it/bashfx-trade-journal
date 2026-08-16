@@ -29,7 +29,7 @@ import { Button } from "./ui/button";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: UploadCloud, label: "Daily upload", path: "/upload" },
+  { icon: UploadCloud, label: "Daily journal", path: "/upload" },
   { icon: ClipboardList, label: "Weekly log", path: "/trades" },
   { icon: Sparkles, label: "Weekly summary", path: "/summary" },
 ];
@@ -63,10 +63,10 @@ export default function DashboardLayout({
       <div className="grid-noise min-h-screen flex items-center justify-center p-5">
         <div className="metal-border rise-in w-full max-w-xl overflow-hidden rounded-2xl bg-[#11120d] p-8 text-center md:p-12">
           <div className="mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#dba71d]/60 bg-[#1c1808] text-[#f3c95a] shadow-[0_0_45px_rgba(219,167,29,.15)]"><Crown className="h-8 w-8" /></div>
-          <p className="gold-text font-display text-xl tracking-[0.2em]">BASHFX</p>
+          <p className="gold-text font-display text-xl tracking-[0.2em]">BASHFX VIP GOLD ROOM</p>
           <h1 className="mt-2 font-display text-5xl tracking-wide text-white md:text-6xl">TRADE JOURNAL</h1>
           <div className="gold-line mx-auto my-6 h-px w-28" />
-          <p className="mx-auto max-w-sm text-sm leading-6 text-[#b7b4a8]">A private workspace for uploading daily Forex results, reviewing AI extraction, and building your weekly BashFX summary.</p>
+          <p className="mx-auto max-w-sm text-sm leading-6 text-[#b7b4a8]">A private XAUUSD M5 workspace for recording dated London and New York trades, then building your weekly Gold Room summary.</p>
           <Button onClick={() => startLogin()} size="lg" className="mt-8 h-12 w-full bg-[#dba71d] font-bold text-[#130e03] shadow-[0_8px_30px_rgba(219,167,29,.2)] hover:bg-[#f3c95a]">Sign in to your journal</Button>
         </div>
       </div>
@@ -162,7 +162,7 @@ function DashboardLayoutContent({
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
                   <Crown className="h-5 w-5 text-[#e4b933]" />
-                  <span className="font-display text-xl tracking-[0.12em] text-white truncate">BASHFX</span>
+                  <span className="font-display text-xl tracking-[0.09em] text-white truncate">BASHFX VIP GOLD ROOM</span>
                 </div>
               ) : null}
             </div>
@@ -240,7 +240,7 @@ function DashboardLayoutContent({
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-1">
                   <span className="font-display text-xl tracking-wide text-foreground">
-                    {activeMenuItem?.label ?? "BashFX"}
+                    {activeMenuItem?.label ?? "Bashfx VIP Gold Room"}
                   </span>
                 </div>
               </div>

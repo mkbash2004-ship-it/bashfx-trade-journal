@@ -24,7 +24,7 @@ export type WeeklyMetrics = {
   totalProfit: number;
 };
 
-const resultSet = new Set(["win", "loss", "breakeven", "unknown"]);
+const resultSet = new Set(["win", "loss", "breakeven", "cancelled", "unknown"]);
 const directionSet = new Set(["buy", "sell", "unknown"]);
 
 export function cleanResult(value: string) {
@@ -81,5 +81,5 @@ export function getCurrentWeekWindow(reference = new Date()) {
 }
 
 export function formatTradeRowsForPrompt(items: Trade[]) {
-  return items.map((trade, index) => `${index + 1}. ${trade.pair} | ${trade.session || "Session n/a"} | ${trade.direction.toUpperCase()} | ${trade.pips === null ? "Pips n/a" : `${trade.pips > 0 ? "+" : ""}${trade.pips} PIPS`} | ${trade.result.toUpperCase()}`).join("\n");
+  return items.map((trade, index) => `${index + 1}. ${new Date(trade.tradingDay).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} | XAUUSD | ${trade.session || "Session n/a"} | ${trade.direction.toUpperCase()} | ${trade.pips === null ? "Pips n/a" : `${trade.pips > 0 ? "+" : ""}${trade.pips} PIPS`} | ${trade.result.toUpperCase()}`).join("\n");
 }

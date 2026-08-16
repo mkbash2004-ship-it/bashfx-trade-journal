@@ -1,86 +1,83 @@
 import { TRPCError } from "@trpc/server";
+import { parse as parseCookie } from "cookie";
 import { z } from "zod";
 import {
-  createTradeDocument,
-  createTrades,
+  createDailyJournalEntry,
   createWeeklySummary,
-  getTradesForDocument,
+  getJournalReminderSettings,
   getTradesForWeek,
   getWeeklySummaries,
   getWeeklySummaryForUser,
-  setDocumentExtractionStatus,
+  saveJournalReminderSettings,
   updateTradeForUser,
 } from "../db";
+import { createHeartbeatJob, updateHeartbeatJob } from "../_core/heartbeat";
 import { generateImage } from "../_core/imageGeneration";
-import { invokeLLM, listLLMModels } from "../_core/llm";
 import { protectedProcedure, router } from "../_core/trpc";
-import { storageGetSignedUrl, storagePut } from "../storage";
-import { calculateWeeklyMetrics, formatTradeRowsForPrompt, getCurrentWeekWindow, normalizeExtractedTrade, type ExtractedTrade } from "../tradeUtils";
+import { storageGetSignedUrl } from "../storage";
+import { calculateWeeklyMetrics, formatTradeRowsForPrompt, getCurrentWeekWindow } from "../tradeUtils";
+import { COOKIE_NAME } from "../../shared/const";
+import { buildReminderJobs, defaultReminderTimes } from "../reminderSchedule";
 
-const acceptedMimeTypes = ["image/jpeg", "image/png", "application/pdf"] as const;
-const tradeInput = z.object({
-  id: z.number().int().positive(),
-  pair: z.string().min(1).max(24),
-  session: z.string().max(64),
-  direction: z.enum(["buy", "sell", "unknown"]),
+const optionalNumber = z.number().nullable();
+const directTradeInput = z.object({
+  tradingDay: z.coerce.date(),
+  session: z.enum(["London", "New York"]),
+  direction: z.enum(["buy", "sell"]),
+  tradeType: z.enum(["scalp", "intraday", "news trade", "swing"]),
+  setup: z.string().min(1).max(120),
+  entryConfirmation: z.string().min(1).max(160),
+  higherTimeframeAlignment: z.enum(["aligned", "counter-trend", "range trade", "not applicable"]),
   entry: z.string().max(32),
   exit: z.string().max(32),
-  pips: z.number().nullable(),
-  profit: z.number().nullable(),
+  pips: z.number(),
+  profit: optionalNumber,
   currency: z.string().max(12),
-  result: z.enum(["win", "loss", "breakeven", "unknown"]),
+  riskAmount: optionalNumber,
+  riskUnit: z.enum(["%", "currency", ""]).default(""),
+  plannedRr: optionalNumber,
+  stopManagement: z.enum(["no change", "break-even", "trailed", "widened", "closed early"]),
+  partialProfit: z.enum(["no", "one partial", "multiple partials"]),
+  result: z.enum(["win", "loss", "breakeven", "cancelled"]),
+  exitReason: z.enum(["take profit", "stop loss", "manual close", "break-even", "news", "end of session", "other"]),
+  planAdherence: z.enum(["yes", "partly", "no"]),
+  discipline: z.enum(["yes", "mostly", "no"]),
+  emotion: z.enum(["calm", "patient", "anxious", "fearful", "greedy", "revenge-driven", "overconfident", "other"]),
+  wouldTakeAgain: z.enum(["yes", "with adjustments", "no"]),
+  tags: z.string().max(500),
   notes: z.string().max(1000),
+  improvement: z.string().max(1000),
 });
 
-const extractedTradesSchema = {
-  type: "json_schema" as const,
-  json_schema: {
-    name: "forex_trade_extraction",
-    strict: true,
-    schema: {
-      type: "object",
-      properties: {
-        trades: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              pair: { type: "string" },
-              session: { type: "string" },
-              direction: { type: "string" },
-              entry: { type: "string" },
-              exit: { type: "string" },
-              pips: { type: ["number", "null"] },
-              profit: { type: ["number", "null"] },
-              currency: { type: "string" },
-              result: { type: "string" },
-              notes: { type: "string" },
-              confidence: { type: "number" },
-            },
-            required: ["pair", "session", "direction", "entry", "exit", "pips", "profit", "currency", "result", "notes", "confidence"],
-            additionalProperties: false,
-          },
-        },
-      },
-      required: ["trades"],
-      additionalProperties: false,
-    },
-  },
-};
+const directJournalInput = z.object({
+  journalDate: z.coerce.date(),
+  plannedSessions: z.string().max(80),
+  marketBias: z.enum(["bullish", "bearish", "range", "neutral / no bias"]),
+  marketContext: z.enum(["trend continuation", "pullback", "reversal area", "range", "breakout", "unclear"]),
+  scheduledEvents: z.string().max(255),
+  newsTiming: z.enum(["before", "after", "during", "did not trade news", "no high-impact news"]),
+  dailyRiskLimit: optionalNumber,
+  dailyRiskUnit: z.enum(["%", "currency", ""]).default(""),
+  maxTrades: z.number().int().positive().nullable(),
+  preMarketMood: z.enum(["calm", "focused", "neutral", "tired", "stressed", "frustrated", "overconfident"]),
+  riskLimitFollowed: z.enum(["yes", "partly", "no"]),
+  tradeLimitFollowed: z.enum(["yes", "no", "not set"]),
+  newsImpact: z.enum(["none", "positive influence", "negative influence", "traded intentionally", "should have avoided"]),
+  dailyStrength: z.string().max(1000),
+  dailyLesson: z.string().max(1000),
+  dailyGrade: z.enum(["A", "B", "C", "D", "F"]),
+  tomorrowRule: z.string().max(1000),
+  trades: z.array(directTradeInput).min(1),
+});
 
-function toBuffer(dataUrl: string) {
-  const comma = dataUrl.indexOf(",");
-  const payload = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
-  return Buffer.from(payload, "base64");
-}
+const editableTradeInput = directTradeInput.extend({ id: z.number().int().positive() });
+const referenceImageKey = "bashfx-weekly-summary-reference_6edfb5c3.jpg";
 
 function imageKeyFromUrl(url: string) {
   const prefix = "/manus-storage/";
   if (!url.startsWith(prefix)) throw new Error("Generated image was not stored correctly");
   return url.slice(prefix.length);
 }
-
-const referenceImageKey = "bashfx-weekly-summary-reference_6edfb5c3.jpg";
 
 export const tradeJournalRouter = router({
   dashboard: protectedProcedure.query(async ({ ctx }) => {
@@ -95,64 +92,69 @@ export const tradeJournalRouter = router({
     return { weekStart, weekEnd, metrics: calculateWeeklyMetrics(items), trades: items };
   }),
 
-  uploadAndExtract: protectedProcedure.input(z.object({
-    fileName: z.string().min(1).max(255),
-    mimeType: z.enum(acceptedMimeTypes),
-    contentBase64: z.string().min(32).max(48_000_000),
-    tradingDay: z.coerce.date(),
-  })).mutation(async ({ ctx, input }) => {
-    const buffer = toBuffer(input.contentBase64);
-    if (buffer.byteLength > 20 * 1024 * 1024) {
-      throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Choose a file smaller than 20 MB." });
-    }
-
-    const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
-    const stored = await storagePut(`users/${ctx.user.id}/trade-uploads/${Date.now()}-${safeName}`, buffer, input.mimeType);
-    const documentId = await createTradeDocument({
+  createDailyJournal: protectedProcedure.input(directJournalInput).mutation(async ({ ctx, input }) => {
+    return createDailyJournalEntry({
       userId: ctx.user.id,
-      fileName: input.fileName,
-      mimeType: input.mimeType,
-      storageKey: stored.key,
-      tradingDay: input.tradingDay,
+      journal: {
+        journalDate: input.journalDate,
+        plannedSessions: input.plannedSessions,
+        marketBias: input.marketBias,
+        marketContext: input.marketContext,
+        scheduledEvents: input.scheduledEvents,
+        newsTiming: input.newsTiming,
+        dailyRiskLimit: input.dailyRiskLimit,
+        dailyRiskUnit: input.dailyRiskUnit,
+        maxTrades: input.maxTrades,
+        preMarketMood: input.preMarketMood,
+        riskLimitFollowed: input.riskLimitFollowed,
+        tradeLimitFollowed: input.tradeLimitFollowed,
+        newsImpact: input.newsImpact,
+        dailyStrength: input.dailyStrength,
+        dailyLesson: input.dailyLesson,
+        dailyGrade: input.dailyGrade,
+        tomorrowRule: input.tomorrowRule,
+      },
+      tradeRecords: input.trades,
     });
-
-    try {
-      const fileUrl = await storageGetSignedUrl(stored.key);
-      const models = await listLLMModels();
-      const model = models.data.some(item => item.id === "gemini-3-flash-preview") ? "gemini-3-flash-preview" : undefined;
-      const content = input.mimeType === "application/pdf"
-        ? [{ type: "text" as const, text: "Read this Forex trade document and extract every individual completed trade. Do not invent values. Use unknown or null when information is absent." }, { type: "file_url" as const, file_url: { url: fileUrl, mime_type: "application/pdf" as const } }]
-        : [{ type: "text" as const, text: "Read this Forex trade-result image and extract every individual completed trade. Do not invent values. Use unknown or null when information is absent." }, { type: "image_url" as const, image_url: { url: fileUrl, detail: "high" as const } }];
-      const response = await invokeLLM({
-        model,
-        messages: [
-          { role: "system", content: "You are a precise Forex trade journal extraction assistant. Return only the required JSON. A trade outcome of BE or break-even is breakeven. Pips must be a signed number when visible. Confidence is an integer from 0 to 100." },
-          { role: "user", content },
-        ],
-        response_format: extractedTradesSchema,
-        maxTokens: 4000,
-      });
-      const modelContent = response.choices[0]?.message.content;
-      if (typeof modelContent !== "string") throw new Error("The extraction model returned an invalid response");
-      const parsed = JSON.parse(modelContent || "{}") as { trades?: ExtractedTrade[] };
-      const normalized = (parsed.trades ?? []).map(normalizeExtractedTrade);
-      const savedTrades = await createTrades(normalized.map(trade => ({ ...trade, userId: ctx.user.id, documentId, tradingDay: input.tradingDay })));
-      await setDocumentExtractionStatus(documentId, ctx.user.id, "completed");
-      return { documentId, trades: savedTrades };
-    } catch (error) {
-      await setDocumentExtractionStatus(documentId, ctx.user.id, "failed");
-      const message = error instanceof Error ? error.message : "Unable to extract trades";
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `The file was stored securely, but extraction failed: ${message}` });
-    }
   }),
 
-  documentTrades: protectedProcedure.input(z.object({ documentId: z.number().int().positive() })).query(async ({ ctx, input }) => {
-    return getTradesForDocument(input.documentId, ctx.user.id);
-  }),
-
-  saveTrade: protectedProcedure.input(tradeInput).mutation(async ({ ctx, input }) => {
+  saveTrade: protectedProcedure.input(editableTradeInput).mutation(async ({ ctx, input }) => {
     const { id, ...values } = input;
     return updateTradeForUser(ctx.user.id, id, values);
+  }),
+
+  reminderStatus: protectedProcedure.query(async ({ ctx }) => ({
+    settings: await getJournalReminderSettings(ctx.user.id),
+    canActivate: process.env.NODE_ENV === "production",
+    timezone: "UTC+1",
+    schedule: buildReminderJobs(defaultReminderTimes),
+  })),
+
+  configureReminders: protectedProcedure.input(z.object({
+    enabled: z.boolean(),
+    dailyReminderTime: z.string().regex(/^\d{2}:\d{2}$/),
+    fridayReminderTime: z.string().regex(/^\d{2}:\d{2}$/),
+    saturdayReminderTime: z.string().regex(/^\d{2}:\d{2}$/),
+  })).mutation(async ({ ctx, input }) => {
+    const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
+    if (!sessionToken) throw new TRPCError({ code: "UNAUTHORIZED", message: "Sign in again before changing reminder settings." });
+    const existing = await getJournalReminderSettings(ctx.user.id);
+    const taskUids: Record<(typeof reminderJobs)[number]["kind"], string | null> = {
+      daily: existing?.dailyReminderTaskUid ?? null,
+      friday: existing?.fridayReminderTaskUid ?? null,
+      saturday: existing?.saturdayReminderTaskUid ?? null,
+    };
+    const reminderJobs = buildReminderJobs({ daily: input.dailyReminderTime, friday: input.fridayReminderTime, saturday: input.saturdayReminderTime });
+    if (input.enabled && process.env.NODE_ENV !== "production") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Publish the app before enabling automatic reminders." });
+    for (const job of reminderJobs) {
+      if (taskUids[job.kind]) {
+        await updateHeartbeatJob(taskUids[job.kind]!, { cron: job.cron, path: "/api/scheduled/journal-reminder", description: job.label, enable: input.enabled }, sessionToken);
+      } else if (input.enabled) {
+        const created = await createHeartbeatJob({ name: `bashfx-vip-gold-room-${ctx.user.id}-${job.kind}`, cron: job.cron, path: "/api/scheduled/journal-reminder", description: job.label }, sessionToken);
+        taskUids[job.kind] = created.taskUid;
+      }
+    }
+    return saveJournalReminderSettings({ userId: ctx.user.id, enabled: input.enabled ? 1 : 0, timezone: "UTC+1", dailyReminderTime: input.dailyReminderTime, fridayReminderTime: input.fridayReminderTime, saturdayReminderTime: input.saturdayReminderTime, dailyReminderTaskUid: taskUids.daily, fridayReminderTaskUid: taskUids.friday, saturdayReminderTaskUid: taskUids.saturday });
   }),
 
   summaries: protectedProcedure.query(async ({ ctx }) => getWeeklySummaries(ctx.user.id)),
@@ -166,21 +168,19 @@ export const tradeJournalRouter = router({
   generateWeeklySummary: protectedProcedure.mutation(async ({ ctx }) => {
     const { weekStart, weekEnd } = getCurrentWeekWindow();
     const tradeList = await getTradesForWeek(ctx.user.id, weekStart, weekEnd);
-    if (tradeList.length === 0) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: "Add at least one verified trade before generating the weekly summary." });
-    }
+    if (tradeList.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Add at least one dated trade before generating the weekly summary." });
     const metrics = calculateWeeklyMetrics(tradeList);
     const referenceUrl = await storageGetSignedUrl(referenceImageKey);
     const weekLabel = `${weekStart.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${new Date(weekEnd.getTime() - 1).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
-    const prompt = `Create a premium vertical 2:3 Forex performance graphic for the BashFX VIP Gold Room. Use the provided reference image as the visual composition and brand-style reference. Match its luxury black background, brushed metallic gold borders, white condensed headings, gold accents, green wins, red losses, crown motif, bullish gold sculpture area, and boxed sections. Do not copy any unrelated dates or trade figures from the reference.
+    const prompt = `Create a premium vertical 2:3 weekly XAUUSD performance graphic for Bashfx VIP GOLD ROOM. Use the provided reference image as the layout and brand-style reference. Match its luxury black background, brushed metallic gold borders, white condensed headings, gold accents, green wins, red losses, crown motif, and boxed sections. Do not copy dates or trade figures from the reference.
 
 Exact content to render:
 Brand: BASHFX
 Subtitle: VIP GOLD ROOM
 Main headline: WEEKLY SUMMARY
-Banner: VIP SIGNAL RESULTS
+Banner: XAUUSD M5 JOURNAL RESULTS
 Week: ${weekLabel}
-Trade table columns: PAIR | SESSION | DIRECTION | PIPS | RESULT
+Trade table columns: DATE | PAIR | SESSION | DIRECTION | PIPS | RESULT
 Trade rows:
 ${formatTradeRowsForPrompt(tradeList)}
 Performance title: WEEKLY PERFORMANCE
@@ -193,15 +193,9 @@ Total pips: ${metrics.totalPips >= 0 ? "+" : ""}${metrics.totalPips} PIPS
 Total profit: ${metrics.totalProfit >= 0 ? "+" : ""}${metrics.totalProfit}
 Footer: DISCIPLINE • CONSISTENCY • RESULTS
 
-Use a clean editorial grid with a large readable trade table and the performance blocks arranged like the reference. Keep all specified trade values accurate. Avoid invented trades, spelling mistakes, charts that obscure the table, watermarks, extra logos, people, or unreadable tiny text.`;
-    const image = await generateImage({
-      prompt,
-      originalImages: [{ url: referenceUrl, mimeType: "image/jpeg" }],
-      model: "MODEL_GPT_IMAGE_2",
-      quality: "high",
-    });
+Keep every specified trade date and value accurate. Use a clean editorial grid with a large readable trade table. Avoid invented trades, spelling mistakes, watermarks, extra logos, people, or unreadable tiny text.`;
+    const image = await generateImage({ prompt, originalImages: [{ url: referenceUrl, mimeType: "image/jpeg" }], model: "MODEL_GPT_IMAGE_2", quality: "high" });
     if (!image.url) throw new Error("Image generation returned no image");
-    const summaryId = await createWeeklySummary(ctx.user.id, weekStart, imageKeyFromUrl(image.url));
-    return { summaryId };
+    return { summaryId: await createWeeklySummary(ctx.user.id, weekStart, imageKeyFromUrl(image.url)) };
   }),
 });

@@ -12,3 +12,9 @@
 - [x] Add automated tests for trade math and extraction normalization.
 - [x] Verify desktop and mobile UI rendering, type checks, and core flows before delivery.
 - [ ] Verify the upload-to-extraction-to-summary flow with the first real trading-day JPG, PNG, or PDF added by the user; no fabricated trade records will be inserted for testing.
+- [x] Replace all BashFX labels with the approved "Bashfx VIP GOLD ROOM" brand name during the questionnaire-led journal revision.
+- [x] Configure the approved daily-journal form for XAUUSD only, London/New York sessions only, and M5 as the fixed default timeframe.
+- [x] Make the date a mandatory, prominent, individually saved field on every trade card and use it as the authoritative weekly-summary grouping date.
+- [x] Add configurable end-of-day journal reminders plus Friday-evening and Saturday-morning weekly-summary prompts.
+- [x] Set the approved default reminder times to 20:00 daily, 18:00 Friday, and 09:00 Saturday in UTC+1, with in-app controls to change or pause them.
+- [ ] Publish the updated app, then activate and verify the three scheduled reminder jobs end-to-end from the in-app controls.
