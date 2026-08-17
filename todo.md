@@ -30,3 +30,10 @@
 - [x] Verify the custom-message state-preservation contract through the router regression test and state-preserving UI implementation; live reload interaction remains user-session dependent.
 - [x] Add automated coverage for enabling reminders from inactive settings and pausing active reminders.
 - [x] Perform authenticated click-through verification of Save, Enable, and Pause when a user session is available; deferred safely because no authenticated session was provided, with equivalent router-path coverage passing.
+- [x] Create a tentative Bashfx VIP GOLD ROOM walkthrough video with AI narration and synchronized subtitles.
+- [x] Expand the walkthrough to approximately 4–5 minutes so every daily-journal and weekly-summary step is explained clearly.
+- [x] Produce the tutorial without background music, using only narration and synchronized subtitles.
+- [x] Export and deliver a subtitle-free version of the AI-voiced Bashfx VIP GOLD ROOM tutorial.
+- [x] Add visual touch/click cues that indicate the app controls being explained in the tutorial.
+- [ ] Deliver the finished subtitle-free, touch-guided Bashfx VIP GOLD ROOM tutorial video to the user.
+- [ ] Export and deliver a subtitle-free version of the AI-voiced Bashfx VIP GOLD ROOM tutorial.
