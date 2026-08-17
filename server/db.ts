@@ -129,6 +129,32 @@ export async function getWeeklySummaryForUser(userId: number, summaryId: number)
   return (await db.select().from(weeklySummaries).where(and(eq(weeklySummaries.id, summaryId), eq(weeklySummaries.userId, userId))).limit(1))[0];
 }
 
+export async function deleteWeeklySummaryForUser(userId: number, summaryId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const summary = await getWeeklySummaryForUser(userId, summaryId);
+  if (!summary) throw new Error("Weekly summary not found");
+  await db.delete(weeklySummaries).where(and(eq(weeklySummaries.id, summaryId), eq(weeklySummaries.userId, userId)));
+  return { deletedSummaryId: summary.id };
+}
+
+export async function deleteJournalDayForUser(userId: number, tradingDay: Date) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const start = new Date(tradingDay);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  const [dayTrades, dayJournals] = await Promise.all([
+    db.select({ id: trades.id }).from(trades).where(and(eq(trades.userId, userId), gte(trades.tradingDay, start), lt(trades.tradingDay, end))),
+    db.select({ id: dailyJournals.id }).from(dailyJournals).where(and(eq(dailyJournals.userId, userId), gte(dailyJournals.journalDate, start), lt(dailyJournals.journalDate, end))),
+  ]);
+  if (!dayTrades.length && !dayJournals.length) throw new Error("Daily journal not found");
+  await db.delete(trades).where(and(eq(trades.userId, userId), gte(trades.tradingDay, start), lt(trades.tradingDay, end)));
+  await db.delete(dailyJournals).where(and(eq(dailyJournals.userId, userId), gte(dailyJournals.journalDate, start), lt(dailyJournals.journalDate, end)));
+  return { deletedTrades: dayTrades.length, deletedJournals: dayJournals.length };
+}
+
 export async function getJournalReminderSettings(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");

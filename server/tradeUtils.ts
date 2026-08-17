@@ -59,13 +59,20 @@ export function calculateWeeklyMetrics(items: Array<Pick<Trade, "pips" | "profit
   const losses = items.filter(item => cleanResult(item.result) === "loss").length;
   const breakeven = items.filter(item => cleanResult(item.result) === "breakeven").length;
   const decisive = wins + losses;
+  const netPips = items.reduce((sum, item) => {
+    const pips = Math.abs(item.pips ?? 0);
+    const result = cleanResult(item.result);
+    if (result === "win") return sum + pips;
+    if (result === "loss") return sum - pips;
+    return sum;
+  }, 0);
   return {
     totalTrades: items.length,
     wins,
     losses,
     breakeven,
     winRate: decisive ? Math.round((wins / decisive) * 1000) / 10 : 0,
-    totalPips: Math.round(items.reduce((sum, item) => sum + (item.pips ?? 0), 0) * 100) / 100,
+    totalPips: Math.round(netPips * 100) / 100,
     totalProfit: Math.round(items.reduce((sum, item) => sum + (item.profit ?? 0), 0) * 100) / 100,
   };
 }
@@ -81,5 +88,10 @@ export function getCurrentWeekWindow(reference = new Date()) {
 }
 
 export function formatTradeRowsForPrompt(items: Trade[]) {
-  return items.map((trade, index) => `${index + 1}. ${new Date(trade.tradingDay).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} | XAUUSD | ${trade.session || "Session n/a"} | ${trade.direction.toUpperCase()} | ${trade.pips === null ? "Pips n/a" : `${trade.pips > 0 ? "+" : ""}${trade.pips} PIPS`} | ${trade.result.toUpperCase()}`).join("\n");
+  return items.map((trade, index) => {
+    const result = cleanResult(trade.result);
+    const signedPips = trade.pips === null ? null : result === "loss" ? -Math.abs(trade.pips) : result === "win" ? Math.abs(trade.pips) : 0;
+    const session = `${trade.session || "Session n/a"}${trade.tradeType === "news trade" ? " • NEWS TRADE" : ""}`;
+    return `${index + 1}. ${new Date(trade.tradingDay).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} | XAUUSD | ${session} | ${trade.direction.toUpperCase()} | ${signedPips === null ? "Pips n/a" : `${signedPips > 0 ? "+" : ""}${signedPips} PIPS`} | ${result.toUpperCase()}`;
+  }).join("\n");
 }

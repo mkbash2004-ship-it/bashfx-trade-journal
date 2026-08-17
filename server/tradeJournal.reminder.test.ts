@@ -1,15 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getJournalReminderSettings, saveJournalReminderSettings, updateHeartbeatJob, createHeartbeatJob } = vi.hoisted(() => ({
+const { getJournalReminderSettings, saveJournalReminderSettings, updateHeartbeatJob, createHeartbeatJob, deleteJournalDayForUser, deleteWeeklySummaryForUser } = vi.hoisted(() => ({
   getJournalReminderSettings: vi.fn(),
   saveJournalReminderSettings: vi.fn(),
   updateHeartbeatJob: vi.fn(),
   createHeartbeatJob: vi.fn(),
+  deleteJournalDayForUser: vi.fn(),
+  deleteWeeklySummaryForUser: vi.fn(),
 }));
 
 vi.mock("./db", () => ({
   createDailyJournalEntry: vi.fn(),
   createWeeklySummary: vi.fn(),
+  deleteJournalDayForUser,
+  deleteWeeklySummaryForUser,
   getJournalReminderSettings,
   getTradesForWeek: vi.fn(),
   getWeeklySummaries: vi.fn(),
@@ -98,5 +102,30 @@ describe("journal.configureReminders", () => {
     expect(result.enabled).toBe(0);
     expect(updateHeartbeatJob).toHaveBeenCalledTimes(3);
     expect(updateHeartbeatJob).toHaveBeenCalledWith("daily-task", expect.objectContaining({ enable: false }), "session-token");
+  });
+});
+
+describe("journal deletion controls", () => {
+  const makeCaller = () => appRouter.createCaller({
+    user: { id: 42, openId: "user-42", name: "Gold Trader", email: "gold@example.com", loginMethod: "manus", role: "user", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() },
+    req: { headers: { cookie: `${COOKIE_NAME}=session-token` }, protocol: "https" } as never,
+    res: {} as never,
+  });
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it("deletes a generated summary through the authenticated owner scope", async () => {
+    deleteWeeklySummaryForUser.mockResolvedValue({ deletedSummaryId: 17 });
+
+    await expect(makeCaller().journal.deleteWeeklySummary({ summaryId: 17 })).resolves.toEqual({ deletedSummaryId: 17 });
+    expect(deleteWeeklySummaryForUser).toHaveBeenCalledWith(42, 17);
+  });
+
+  it("deletes all saved journal records for the confirmed trade date through the owner scope", async () => {
+    deleteJournalDayForUser.mockResolvedValue({ deletedTrades: 3, deletedJournals: 1 });
+    const tradingDay = new Date("2026-08-19T12:00:00.000Z");
+
+    await expect(makeCaller().journal.deleteJournalDay({ tradingDay })).resolves.toEqual({ deletedTrades: 3, deletedJournals: 1 });
+    expect(deleteJournalDayForUser).toHaveBeenCalledWith(42, tradingDay);
   });
 });

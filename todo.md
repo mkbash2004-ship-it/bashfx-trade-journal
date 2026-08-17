@@ -42,3 +42,6 @@
 - [x] Diagnose the daily-journal validation message shown after adding a trade and make every missing required field immediately identifiable on mobile.
 - [x] Add practical field-specific suggestions after daily-journal validation identifies each missing required trade detail.
 - [x] Remove the unneeded Setup and Entry confirmation entries from the daily trade form and save validation.
+- [x] Update weekly summaries to show one net pip result calculated as winning pips minus losing pips.
+- [x] Carry each News Trade designation into the generated weekly-summary image.
+- [x] Add confirmed deletion controls for individual weekly summaries and daily journal entries, including their associated trades.

@@ -4,6 +4,8 @@ import { z } from "zod";
 import {
   createDailyJournalEntry,
   createWeeklySummary,
+  deleteJournalDayForUser,
+  deleteWeeklySummaryForUser,
   getJournalReminderSettings,
   getTradesForWeek,
   getWeeklySummaries,
@@ -173,6 +175,10 @@ export const tradeJournalRouter = router({
     return { url: await storageGetSignedUrl(summary.imageKey), createdAt: summary.createdAt };
   }),
 
+  deleteWeeklySummary: protectedProcedure.input(z.object({ summaryId: z.number().int().positive() })).mutation(async ({ ctx, input }) => deleteWeeklySummaryForUser(ctx.user.id, input.summaryId)),
+
+  deleteJournalDay: protectedProcedure.input(z.object({ tradingDay: z.coerce.date() })).mutation(async ({ ctx, input }) => deleteJournalDayForUser(ctx.user.id, input.tradingDay)),
+
   generateWeeklySummary: protectedProcedure.mutation(async ({ ctx }) => {
     const { weekStart, weekEnd } = getCurrentWeekWindow();
     const tradeList = await getTradesForWeek(ctx.user.id, weekStart, weekEnd);
@@ -191,14 +197,15 @@ Week: ${weekLabel}
 Trade table columns: DATE | PAIR | SESSION | DIRECTION | PIPS | RESULT
 Trade rows:
 ${formatTradeRowsForPrompt(tradeList)}
+For every SESSION value that includes "NEWS TRADE", preserve the normal session and add a compact, readable gold NEWS TRADE badge within that same session cell. Do not add a News Trade badge to other rows.
 Performance title: WEEKLY PERFORMANCE
 Total trades: ${metrics.totalTrades}
 Wins: ${metrics.wins}
 Losses: ${metrics.losses}
 Breakeven: ${metrics.breakeven}
 Win rate: ${metrics.winRate}%
-Total pips: ${metrics.totalPips >= 0 ? "+" : ""}${metrics.totalPips} PIPS
-Total profit: ${metrics.totalProfit >= 0 ? "+" : ""}${metrics.totalProfit}
+Net pips: ${metrics.totalPips >= 0 ? "+" : ""}${metrics.totalPips} PIPS
+The performance panel must show ONLY this one NET PIPS total after Wins, Losses, Breakeven, and Win rate. Calculate it as winning pips minus losing pips. Do not render a Total Profit row or a second pip-total row.
 Footer: DISCIPLINE • CONSISTENCY • RESULTS
 
 Keep every specified trade date and value accurate. Use a clean editorial grid with a large readable trade table. Avoid invented trades, spelling mistakes, watermarks, extra logos, people, or unreadable tiny text.`;
