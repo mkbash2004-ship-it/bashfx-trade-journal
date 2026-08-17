@@ -56,3 +56,4 @@
 - [x] Verify the Weekly Trade Log shows non-XAUUSD selected pairs correctly on mobile.
 - [ ] Revise the in-app tutorial video to cover multi-pair selection, Trader Name, Community feedback, and automatic monthly summaries.
 - [ ] Upload and replace the embedded tutorial video with the revised version after verifying playback in the app.
+- [x] Change automatic monthly-summary scheduling and displayed timing from UTC to WAT (UTC+1).

@@ -33,6 +33,7 @@ import { buildReminderJobs, defaultReminderTimes } from "../reminderSchedule";
 import { buildCustomNotificationSettings } from "../customNotificationUtils";
 import { ENV } from "../_core/env";
 import { generateMonthlySummaryForUser } from "../monthlySummaryService";
+import { MONTH_END_WAT_CRON, MONTH_END_WAT_DESCRIPTION, MONTH_END_WAT_LABEL } from "../monthlySchedule";
 
 const optionalNumber = z.number().nullable();
 const directTradeInput = z.object({
@@ -147,7 +148,7 @@ export const tradeJournalRouter = router({
   monthlyAutomationStatus: protectedProcedure.query(async ({ ctx }) => ({
     enabled: Boolean((await getMonthlySummaryAutomation())?.scheduleTaskUid),
     canManage: ctx.user.openId === ENV.ownerOpenId,
-    schedule: "20:00 UTC on the first day of every month, reviewing the month that just closed",
+    schedule: MONTH_END_WAT_LABEL,
   })),
 
   enableMonthlyAutomation: protectedProcedure.mutation(async ({ ctx }) => {
@@ -157,10 +158,10 @@ export const tradeJournalRouter = router({
     if (!sessionToken) throw new TRPCError({ code: "UNAUTHORIZED", message: "Sign in again before enabling monthly automation." });
     const existing = await getMonthlySummaryAutomation();
     if (existing?.scheduleTaskUid) {
-      await updateHeartbeatJob(existing.scheduleTaskUid, { cron: "0 0 20 1 * *", path: "/api/scheduled/monthly-summary", description: "Bashfx VIP GOLD ROOM automatic month-end summaries", enable: true }, sessionToken);
+      await updateHeartbeatJob(existing.scheduleTaskUid, { cron: MONTH_END_WAT_CRON, path: "/api/scheduled/monthly-summary", description: MONTH_END_WAT_DESCRIPTION, enable: true }, sessionToken);
       return { enabled: true };
     }
-    const created = await createHeartbeatJob({ name: "bashfx-vip-gold-room-monthly-summary", cron: "0 0 20 1 * *", path: "/api/scheduled/monthly-summary", description: "Bashfx VIP GOLD ROOM automatic month-end summaries" }, sessionToken);
+    const created = await createHeartbeatJob({ name: "bashfx-vip-gold-room-monthly-summary", cron: MONTH_END_WAT_CRON, path: "/api/scheduled/monthly-summary", description: MONTH_END_WAT_DESCRIPTION }, sessionToken);
     await saveMonthlySummaryAutomation(created.taskUid);
     return { enabled: true };
   }),
@@ -199,7 +200,7 @@ export const tradeJournalRouter = router({
   reminderStatus: protectedProcedure.query(async ({ ctx }) => ({
     settings: await getJournalReminderSettings(ctx.user.id),
     canActivate: process.env.NODE_ENV === "production",
-    timezone: "UTC+1",
+    timezone: "WAT",
     schedule: buildReminderJobs(defaultReminderTimes),
   })),
 
@@ -234,7 +235,7 @@ export const tradeJournalRouter = router({
       }
     }
     const templates = buildCustomNotificationSettings({ enabled: input.enabled, dailyNotificationTitle: input.dailyNotificationTitle, dailyNotificationContent: input.dailyNotificationContent, fridayNotificationTitle: input.fridayNotificationTitle, fridayNotificationContent: input.fridayNotificationContent, saturdayNotificationTitle: input.saturdayNotificationTitle, saturdayNotificationContent: input.saturdayNotificationContent });
-    return saveJournalReminderSettings({ userId: ctx.user.id, enabled: templates.enabled ? 1 : 0, timezone: "UTC+1", dailyReminderTime: input.dailyReminderTime, fridayReminderTime: input.fridayReminderTime, saturdayReminderTime: input.saturdayReminderTime, dailyNotificationTitle: templates.dailyNotificationTitle, dailyNotificationContent: templates.dailyNotificationContent, fridayNotificationTitle: templates.fridayNotificationTitle, fridayNotificationContent: templates.fridayNotificationContent, saturdayNotificationTitle: templates.saturdayNotificationTitle, saturdayNotificationContent: templates.saturdayNotificationContent, dailyReminderTaskUid: taskUids.daily, fridayReminderTaskUid: taskUids.friday, saturdayReminderTaskUid: taskUids.saturday });
+    return saveJournalReminderSettings({ userId: ctx.user.id, enabled: templates.enabled ? 1 : 0, timezone: "WAT", dailyReminderTime: input.dailyReminderTime, fridayReminderTime: input.fridayReminderTime, saturdayReminderTime: input.saturdayReminderTime, dailyNotificationTitle: templates.dailyNotificationTitle, dailyNotificationContent: templates.dailyNotificationContent, fridayNotificationTitle: templates.fridayNotificationTitle, fridayNotificationContent: templates.fridayNotificationContent, saturdayNotificationTitle: templates.saturdayNotificationTitle, saturdayNotificationContent: templates.saturdayNotificationContent, dailyReminderTaskUid: taskUids.daily, fridayReminderTaskUid: taskUids.friday, saturdayReminderTaskUid: taskUids.saturday });
   }),
 
   summaries: protectedProcedure.query(async ({ ctx }) => getWeeklySummaries(ctx.user.id)),

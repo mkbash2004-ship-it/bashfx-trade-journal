@@ -17,7 +17,7 @@ function parseTime(value: string) {
   return { hours, minutes };
 }
 
-/** Converts a user-facing UTC+1 time to Manus's six-field UTC cron format. */
+/** Converts a user-facing WAT time to Manus's six-field UTC cron format. */
 export function utcPlusOneCron(time: string, localDayOfWeek?: number) {
   const { hours, minutes } = parseTime(time);
   let utcMinutes = hours * 60 + minutes - 60;
@@ -33,8 +33,8 @@ export function utcPlusOneCron(time: string, localDayOfWeek?: number) {
 
 export function buildReminderJobs(times: ReminderTimes) {
   return [
-    { kind: "daily" as const, cron: utcPlusOneCron(times.daily), label: `Daily ${times.daily} UTC+1 journal reminder` },
-    { kind: "friday" as const, cron: utcPlusOneCron(times.friday, 5), label: `Friday ${times.friday} UTC+1 weekly-summary reminder` },
-    { kind: "saturday" as const, cron: utcPlusOneCron(times.saturday, 6), label: `Saturday ${times.saturday} UTC+1 weekly-summary follow-up` },
+    { kind: "daily" as const, cron: utcPlusOneCron(times.daily), label: `Daily ${times.daily} WAT journal reminder` },
+    { kind: "friday" as const, cron: utcPlusOneCron(times.friday, 5), label: `Friday ${times.friday} WAT weekly-summary reminder` },
+    { kind: "saturday" as const, cron: utcPlusOneCron(times.saturday, 6), label: `Saturday ${times.saturday} WAT weekly-summary follow-up` },
   ];
 }
