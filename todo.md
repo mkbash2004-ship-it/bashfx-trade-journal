@@ -35,5 +35,7 @@
 - [x] Produce the tutorial without background music, using only narration and synchronized subtitles.
 - [x] Export and deliver a subtitle-free version of the AI-voiced Bashfx VIP GOLD ROOM tutorial.
 - [x] Add visual touch/click cues that indicate the app controls being explained in the tutorial.
-- [ ] Deliver the finished subtitle-free, touch-guided Bashfx VIP GOLD ROOM tutorial video to the user.
-- [ ] Export and deliver a subtitle-free version of the AI-voiced Bashfx VIP GOLD ROOM tutorial.
+- [x] Deliver the finished subtitle-free, touch-guided Bashfx VIP GOLD ROOM tutorial video to the user through the final attachment.
+- [x] Export and deliver a subtitle-free version of the AI-voiced Bashfx VIP GOLD ROOM tutorial.
+- [x] Upload the touch-guided tutorial as a deployable web asset and add an in-app Help & Tutorial video player.
+- [x] Resume the in-app tutorial video integration without rolling back the Bashfx VIP GOLD ROOM project.

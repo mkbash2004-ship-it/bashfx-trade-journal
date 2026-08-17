@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import UploadTrades from "./pages/UploadTrades";
 import WeeklyTrades from "./pages/WeeklyTrades";
 import WeeklySummary from "./pages/WeeklySummary";
+import Tutorial from "./pages/Tutorial";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -18,6 +19,7 @@ function Router() {
       <Route path={"/upload"} component={UploadTrades} />
       <Route path={"/trades"} component={WeeklyTrades} />
       <Route path={"/summary"} component={WeeklySummary} />
+      <Route path={"/tutorial"} component={Tutorial} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

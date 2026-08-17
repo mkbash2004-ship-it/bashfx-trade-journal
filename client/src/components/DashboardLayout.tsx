@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { ClipboardList, Crown, LayoutDashboard, LogOut, PanelLeft, Sparkles, UploadCloud } from "lucide-react";
+import { CirclePlay, ClipboardList, Crown, LayoutDashboard, LogOut, PanelLeft, Sparkles, UploadCloud } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -32,6 +32,7 @@ const menuItems = [
   { icon: UploadCloud, label: "Daily journal", path: "/upload" },
   { icon: ClipboardList, label: "Weekly log", path: "/trades" },
   { icon: Sparkles, label: "Weekly summary", path: "/summary" },
+  { icon: CirclePlay, label: "Help & tutorial", path: "/tutorial" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
