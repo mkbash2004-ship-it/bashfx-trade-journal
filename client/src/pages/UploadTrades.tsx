@@ -32,8 +32,6 @@ type TradeDraft = {
   session: "London" | "New York";
   direction: "buy" | "sell";
   tradeType: "scalp" | "intraday" | "news trade" | "swing";
-  setup: string;
-  entryConfirmation: string;
   higherTimeframeAlignment: "aligned" | "counter-trend" | "range trade" | "not applicable";
   entry: string;
   exit: string;
@@ -65,8 +63,6 @@ const newTrade = (day: string): TradeDraft => ({
   session: "London",
   direction: "buy",
   tradeType: "intraday",
-  setup: "",
-  entryConfirmation: "",
   higherTimeframeAlignment: "aligned",
   entry: "",
   exit: "",
@@ -279,8 +275,6 @@ function TradeCard({ trade, index, missingFields, onPatch, onRemove, removable }
         <SelectField label="Session" value={trade.session} onChange={(value) => onPatch({ session: value as TradeDraft["session"] })} options={["London", "New York"]} />
         <SelectField label="Direction" value={trade.direction} onChange={(value) => onPatch({ direction: value as TradeDraft["direction"] })} options={["buy", "sell"]} />
         <SelectField label="Trade type" value={trade.tradeType} onChange={(value) => onPatch({ tradeType: value as TradeDraft["tradeType"] })} options={["scalp", "intraday", "news trade", "swing"]} />
-        <Field label="Setup — required" value={trade.setup} onChange={(value) => onPatch({ setup: value })} placeholder="Liquidity sweep + MSS" invalid={isMissing("setup")} suggestion={REQUIRED_TRADE_FIELD_SUGGESTIONS.setup} />
-        <Field label="Entry confirmation — required" value={trade.entryConfirmation} onChange={(value) => onPatch({ entryConfirmation: value })} placeholder="M5 displacement & retest" invalid={isMissing("entryConfirmation")} suggestion={REQUIRED_TRADE_FIELD_SUGGESTIONS.entryConfirmation} />
         <SelectField label="Higher-timeframe alignment" value={trade.higherTimeframeAlignment} onChange={(value) => onPatch({ higherTimeframeAlignment: value as TradeDraft["higherTimeframeAlignment"] })} options={["aligned", "counter-trend", "range trade", "not applicable"]} />
         <Field label="Entry price" value={trade.entry} onChange={(value) => onPatch({ entry: value })} placeholder="2330.50" />
         <Field label="Exit price" value={trade.exit} onChange={(value) => onPatch({ exit: value })} placeholder="2338.10" />

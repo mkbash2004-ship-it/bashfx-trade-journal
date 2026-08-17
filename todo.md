@@ -41,3 +41,4 @@
 - [x] Resume the in-app tutorial video integration without rolling back the Bashfx VIP GOLD ROOM project.
 - [x] Diagnose the daily-journal validation message shown after adding a trade and make every missing required field immediately identifiable on mobile.
 - [x] Add practical field-specific suggestions after daily-journal validation identifies each missing required trade detail.
+- [x] Remove the unneeded Setup and Entry confirmation entries from the daily trade form and save validation.
