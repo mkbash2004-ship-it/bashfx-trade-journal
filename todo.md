@@ -58,5 +58,5 @@
 - [x] Upload and replace the embedded tutorial video with the revised version after verifying playback in the app.
 - [x] Change automatic monthly-summary scheduling and displayed timing from UTC to WAT (UTC+1).
 - [x] Start the embedded revised tutorial in the app and confirm in-player playback succeeds after the asset replacement.
-- [ ] Publish the revised tutorial metadata so the live app natively references the new MP4 and expanded learning steps.
-- [ ] Verify the published tutorial player starts the revised MP4 without a manual browser override.
+- [x] Publish the revised tutorial metadata so the live app natively references the new MP4 and expanded learning steps.
+- [x] Verify the published tutorial player starts the revised MP4 without a manual browser override.
