@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getMissingRequiredTradeFields } from "../shared/journalValidation";
+import {
+  getMissingRequiredTradeFields,
+  REQUIRED_TRADE_FIELD_SUGGESTIONS,
+} from "../shared/journalValidation";
 
 describe("daily journal required trade validation", () => {
   it("identifies the exact empty required fields", () => {
@@ -22,5 +25,11 @@ describe("daily journal required trade validation", () => {
         pips: "0",
       }),
     ).toEqual([]);
+  });
+
+  it("provides a concrete entry suggestion for every required field", () => {
+    expect(Object.values(REQUIRED_TRADE_FIELD_SUGGESTIONS)).toHaveLength(4);
+    expect(REQUIRED_TRADE_FIELD_SUGGESTIONS.pips).toContain("+75");
+    expect(REQUIRED_TRADE_FIELD_SUGGESTIONS.entryConfirmation).toContain("M5");
   });
 });
