@@ -18,5 +18,11 @@
 - [x] Add configurable end-of-day journal reminders plus Friday-evening and Saturday-morning weekly-summary prompts.
 - [x] Set the approved default reminder times to 20:00 daily, 18:00 Friday, and 09:00 Saturday in UTC+1, with in-app controls to change or pause them.
 - [x] Publish the updated app, then activate and verify the three scheduled reminder jobs end-to-end from the in-app controls.
-- [ ] Add custom notification message templates and controls for daily, Friday, and Saturday reminders.
+- [x] Add custom notification message templates and controls for daily, Friday, and Saturday reminders.
 - [ ] Verify custom notification settings on the published Bashfx VIP GOLD ROOM domain.
+- [x] Allow custom notification titles/messages to save without disabling active reminders; preserve enabled state unless pause or enable is explicitly chosen.
+- [x] Add a test covering custom-message updates while reminders are already enabled.
+- [x] Verify in the local preview UI that custom notification edits have a separate save action and explicit pause action; live-domain persistence remains session-dependent.
+- [x] Add a true explicit enable action for inactive reminder settings while keeping the primary save action state-preserving.
+- [ ] Add an integration-style reminder mutation test proving an enabled user can update custom messages without changing task activation.
+- [ ] Manually verify save, enable, and pause actions in an authenticated app session.

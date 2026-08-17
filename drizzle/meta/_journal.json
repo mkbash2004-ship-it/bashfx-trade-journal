@@ -36,6 +36,20 @@
       "when": 1786920322702,
       "tag": "0004_redundant_the_twelve",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1786953654183,
+      "tag": "0005_furry_lady_vermin",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1786953700615,
+      "tag": "0006_normal_purple_man",
+      "breakpoints": true
     }
   ]
 }

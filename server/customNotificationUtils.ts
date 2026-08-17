@@ -21,3 +21,26 @@ export function normalizeNotificationTemplate(title: string, content: string, fa
     content: (content.trim() || fallback.content).slice(0, 500),
   };
 }
+
+export function buildCustomNotificationSettings(input: {
+  enabled: boolean;
+  dailyNotificationTitle: string;
+  dailyNotificationContent: string;
+  fridayNotificationTitle: string;
+  fridayNotificationContent: string;
+  saturdayNotificationTitle: string;
+  saturdayNotificationContent: string;
+}) {
+  const daily = normalizeNotificationTemplate(input.dailyNotificationTitle, input.dailyNotificationContent, defaultNotificationTemplates.daily);
+  const friday = normalizeNotificationTemplate(input.fridayNotificationTitle, input.fridayNotificationContent, defaultNotificationTemplates.friday);
+  const saturday = normalizeNotificationTemplate(input.saturdayNotificationTitle, input.saturdayNotificationContent, defaultNotificationTemplates.saturday);
+  return {
+    enabled: input.enabled,
+    dailyNotificationTitle: daily.title,
+    dailyNotificationContent: daily.content,
+    fridayNotificationTitle: friday.title,
+    fridayNotificationContent: friday.content,
+    saturdayNotificationTitle: saturday.title,
+    saturdayNotificationContent: saturday.content,
+  };
+}

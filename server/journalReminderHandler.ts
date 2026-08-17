@@ -2,21 +2,8 @@ import type { Request, Response } from "express";
 import { clearJournalReminderSent, getJournalReminderSettingsByTaskUid, markJournalReminderSent } from "./db";
 import { notifyOwner } from "./_core/notification";
 import { sdk } from "./_core/sdk";
+import { defaultNotificationTemplates } from "./customNotificationUtils";
 
-const messages = {
-  daily: {
-    title: "Bashfx VIP Gold Room: complete today’s journal",
-    content: "It is 20:00 UTC+1. Record every dated XAUUSD M5 London or New York trade, then complete your end-of-day review.",
-  },
-  friday: {
-    title: "Bashfx VIP Gold Room: Friday weekly summary",
-    content: "It is time to review this week’s dated XAUUSD M5 trade log and generate your Friday evening weekly summary.",
-  },
-  saturday: {
-    title: "Bashfx VIP Gold Room: Saturday summary follow-up",
-    content: "Your Saturday morning follow-up is ready. Check that every XAUUSD trade has its correct date, then generate or download the weekly summary.",
-  },
-} as const;
 
 export async function sendJournalReminder(req: Request, res: Response) {
   try {
@@ -28,7 +15,16 @@ export async function sendJournalReminder(req: Request, res: Response) {
     if (!kind) return res.json({ ok: true, skipped: "unknown-task" });
     const result = await markJournalReminderSent(user.taskUid, kind);
     if (!result.sent) return res.json({ ok: true, skipped: result.reason });
-    const delivered = await notifyOwner(messages[kind]);
+    const fallback = defaultNotificationTemplates[kind];
+    const template = kind === "daily"
+      ? { title: settings.dailyNotificationTitle, content: settings.dailyNotificationContent }
+      : kind === "friday"
+        ? { title: settings.fridayNotificationTitle, content: settings.fridayNotificationContent }
+        : { title: settings.saturdayNotificationTitle, content: settings.saturdayNotificationContent };
+    const delivered = await notifyOwner({
+      title: template.title?.trim() || fallback.title,
+      content: template.content?.trim() || fallback.content,
+    });
     if (!delivered) {
       await clearJournalReminderSent(user.taskUid, kind);
       throw new Error("Notification service did not accept the reminder");

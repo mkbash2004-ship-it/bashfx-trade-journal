@@ -142,6 +142,12 @@ export async function saveJournalReminderSettings(input: {
   dailyReminderTime: string;
   fridayReminderTime: string;
   saturdayReminderTime: string;
+  dailyNotificationTitle: string;
+  dailyNotificationContent: string;
+  fridayNotificationTitle: string;
+  fridayNotificationContent: string;
+  saturdayNotificationTitle: string;
+  saturdayNotificationContent: string;
   dailyReminderTaskUid?: string | null;
   fridayReminderTaskUid?: string | null;
   saturdayReminderTaskUid?: string | null;
@@ -155,6 +161,12 @@ export async function saveJournalReminderSettings(input: {
       dailyReminderTime: input.dailyReminderTime,
       fridayReminderTime: input.fridayReminderTime,
       saturdayReminderTime: input.saturdayReminderTime,
+      dailyNotificationTitle: input.dailyNotificationTitle,
+      dailyNotificationContent: input.dailyNotificationContent,
+      fridayNotificationTitle: input.fridayNotificationTitle,
+      fridayNotificationContent: input.fridayNotificationContent,
+      saturdayNotificationTitle: input.saturdayNotificationTitle,
+      saturdayNotificationContent: input.saturdayNotificationContent,
       dailyReminderTaskUid: input.dailyReminderTaskUid ?? null,
       fridayReminderTaskUid: input.fridayReminderTaskUid ?? null,
       saturdayReminderTaskUid: input.saturdayReminderTaskUid ?? null,

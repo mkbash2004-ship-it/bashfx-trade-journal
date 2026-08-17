@@ -18,6 +18,7 @@ import { storageGetSignedUrl } from "../storage";
 import { calculateWeeklyMetrics, formatTradeRowsForPrompt, getCurrentWeekWindow } from "../tradeUtils";
 import { COOKIE_NAME } from "../../shared/const";
 import { buildReminderJobs, defaultReminderTimes } from "../reminderSchedule";
+import { buildCustomNotificationSettings } from "../customNotificationUtils";
 
 const optionalNumber = z.number().nullable();
 const directTradeInput = z.object({
@@ -135,11 +136,17 @@ export const tradeJournalRouter = router({
     dailyReminderTime: z.string().regex(/^\d{2}:\d{2}$/),
     fridayReminderTime: z.string().regex(/^\d{2}:\d{2}$/),
     saturdayReminderTime: z.string().regex(/^\d{2}:\d{2}$/),
+    dailyNotificationTitle: z.string().max(120),
+    dailyNotificationContent: z.string().max(500),
+    fridayNotificationTitle: z.string().max(120),
+    fridayNotificationContent: z.string().max(500),
+    saturdayNotificationTitle: z.string().max(120),
+    saturdayNotificationContent: z.string().max(500),
   })).mutation(async ({ ctx, input }) => {
     const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
     if (!sessionToken) throw new TRPCError({ code: "UNAUTHORIZED", message: "Sign in again before changing reminder settings." });
     const existing = await getJournalReminderSettings(ctx.user.id);
-    const taskUids: Record<(typeof reminderJobs)[number]["kind"], string | null> = {
+    const taskUids: Record<"daily" | "friday" | "saturday", string | null> = {
       daily: existing?.dailyReminderTaskUid ?? null,
       friday: existing?.fridayReminderTaskUid ?? null,
       saturday: existing?.saturdayReminderTaskUid ?? null,
@@ -154,7 +161,8 @@ export const tradeJournalRouter = router({
         taskUids[job.kind] = created.taskUid;
       }
     }
-    return saveJournalReminderSettings({ userId: ctx.user.id, enabled: input.enabled ? 1 : 0, timezone: "UTC+1", dailyReminderTime: input.dailyReminderTime, fridayReminderTime: input.fridayReminderTime, saturdayReminderTime: input.saturdayReminderTime, dailyReminderTaskUid: taskUids.daily, fridayReminderTaskUid: taskUids.friday, saturdayReminderTaskUid: taskUids.saturday });
+    const templates = buildCustomNotificationSettings({ enabled: input.enabled, dailyNotificationTitle: input.dailyNotificationTitle, dailyNotificationContent: input.dailyNotificationContent, fridayNotificationTitle: input.fridayNotificationTitle, fridayNotificationContent: input.fridayNotificationContent, saturdayNotificationTitle: input.saturdayNotificationTitle, saturdayNotificationContent: input.saturdayNotificationContent });
+    return saveJournalReminderSettings({ userId: ctx.user.id, enabled: templates.enabled ? 1 : 0, timezone: "UTC+1", dailyReminderTime: input.dailyReminderTime, fridayReminderTime: input.fridayReminderTime, saturdayReminderTime: input.saturdayReminderTime, dailyNotificationTitle: templates.dailyNotificationTitle, dailyNotificationContent: templates.dailyNotificationContent, fridayNotificationTitle: templates.fridayNotificationTitle, fridayNotificationContent: templates.fridayNotificationContent, saturdayNotificationTitle: templates.saturdayNotificationTitle, saturdayNotificationContent: templates.saturdayNotificationContent, dailyReminderTaskUid: taskUids.daily, fridayReminderTaskUid: taskUids.friday, saturdayReminderTaskUid: taskUids.saturday });
   }),
 
   summaries: protectedProcedure.query(async ({ ctx }) => getWeeklySummaries(ctx.user.id)),
