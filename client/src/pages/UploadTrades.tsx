@@ -23,11 +23,12 @@ import {
   Minus,
   Sparkles,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 
 type TradeDraft = {
   clientId: string;
+  pair: string;
   tradingDay: string;
   session: "London" | "New York";
   direction: "buy" | "sell";
@@ -59,6 +60,7 @@ const dateToday = () => new Date().toISOString().slice(0, 10);
 
 const newTrade = (day: string): TradeDraft => ({
   clientId: crypto.randomUUID(),
+  pair: "XAUUSD",
   tradingDay: day,
   session: "London",
   direction: "buy",
@@ -110,9 +112,13 @@ export default function UploadTrades() {
     tomorrowRule: "",
   });
   const [localError, setLocalError] = useState("");
+  const [traderName, setTraderName] = useState("");
+  const profile = trpc.journal.traderProfile.useQuery(undefined, { enabled: isAuthenticated });
+  const saveTraderName = trpc.journal.saveTraderDisplayName.useMutation({ onSuccess: () => profile.refetch() });
   const create = trpc.journal.createDailyJournal.useMutation({
     onSuccess: () => setLocation("/trades"),
   });
+  useEffect(() => { if (profile.data?.traderDisplayName || profile.data?.name) setTraderName(profile.data.traderDisplayName || profile.data.name || ""); }, [profile.data?.traderDisplayName, profile.data?.name]);
 
   const updateForm = (key: keyof typeof form, value: string) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -220,9 +226,9 @@ export default function UploadTrades() {
   return (
     <div className="mx-auto max-w-6xl pb-12">
       <section className="rise-in">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#ddb437]">Bashfx VIP Gold Room / XAUUSD M5</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#ddb437]">Bashfx VIP Gold Room / Multi-market M5</p>
         <h1 className="mt-2 font-display text-5xl tracking-wide text-white md:text-6xl">DAILY TRADE JOURNAL</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-[#aaa79a]">Record your XAUUSD trades as they happened. Build as many trade cards as you need; every card has its own required date and feeds the weekly summary directly.</p>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-[#aaa79a]">Record every market trade as it happened. Choose the pair on each card; every card has its own required date and feeds the weekly and monthly summaries directly.</p>
       </section>
 
       <section className="metal-border mt-7 rounded-2xl bg-[#12130e] p-5 md:p-7">
@@ -231,18 +237,18 @@ export default function UploadTrades() {
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#dba71d]/12 text-[#efc54d]"><CalendarDays className="h-5 w-5" /></div>
             <div><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#e2b74a]">Journal date</p><h2 className="font-display text-2xl tracking-wide text-white">START WITH THE DATE</h2></div>
           </div>
-          <div className="w-full md:w-64"><Label className="sr-only">Daily journal date</Label><Input type="date" value={journalDate} onChange={(event) => updateJournalDate(event.target.value)} className="h-12 border-2 border-[#dba71d] bg-[#080905] px-3 font-bold text-[#ffe39a] [color-scheme:dark]" /></div>
+          <div className="grid w-full gap-3 sm:grid-cols-2 md:w-[34rem]"><div><Label className="text-[10px] font-bold uppercase tracking-[.12em] text-[#e2b74a]">Trader name for your result images</Label><div className="mt-1 flex gap-2"><Input value={traderName} onChange={(event) => setTraderName(event.target.value)} placeholder="Your display name" maxLength={80} className="h-10 border-[#403a20] bg-[#080905] text-sm text-[#ffe39a] placeholder:text-[#686559] focus:border-[#dba71d]" /><Button type="button" disabled={traderName.trim().length < 2 || saveTraderName.isPending} onClick={() => saveTraderName.mutate({ traderDisplayName: traderName.trim() })} variant="outline" className="h-10 shrink-0 border-[#dba71d]/55 text-xs text-[#edcb68] hover:bg-[#dba71d]/10 hover:text-[#fff0b2]">{saveTraderName.isPending ? "Saving…" : "Save name"}</Button></div><p className="mt-1 text-[10px] text-[#918e82]">Shown on your weekly and monthly summary images.</p></div><div><Label className="text-[10px] font-bold uppercase tracking-[.12em] text-[#e2b74a]">Daily journal date</Label><Input type="date" value={journalDate} onChange={(event) => updateJournalDate(event.target.value)} className="mt-1 h-10 border-2 border-[#dba71d] bg-[#080905] px-3 font-bold text-[#ffe39a] [color-scheme:dark]" /></div></div>
         </div>
 
         <div className="mt-7 grid gap-5 lg:grid-cols-3">
           <Panel title="Market context" icon={<Sparkles className="h-4 w-4" />}><SelectField label="Overall bias" value={form.marketBias} onChange={(value) => updateForm("marketBias", value)} options={["bullish", "bearish", "range", "neutral / no bias"]} /><SelectField label="Market context" value={form.marketContext} onChange={(value) => updateForm("marketContext", value)} options={["trend continuation", "pullback", "reversal area", "range", "breakout", "unclear"]} /><SelectField label="Planned session(s)" value={form.plannedSessions} onChange={(value) => updateForm("plannedSessions", value)} options={["London", "New York", "London & New York"]} /></Panel>
           <Panel title="News & risk plan" icon={<LockKeyhole className="h-4 w-4" />}><Field label="High-impact events (CPI, NFP, FOMC…)" value={form.scheduledEvents} onChange={(value) => updateForm("scheduledEvents", value)} placeholder="CPI at 13:30, or None" /><SelectField label="News timing" value={form.newsTiming} onChange={(value) => updateForm("newsTiming", value)} options={["no high-impact news", "before", "after", "during", "did not trade news"]} /><div className="grid grid-cols-2 gap-3"><Field label="Daily risk limit" value={form.dailyRiskLimit} onChange={(value) => updateForm("dailyRiskLimit", value)} type="number" placeholder="1" /><Field label="Maximum trades" value={form.maxTrades} onChange={(value) => updateForm("maxTrades", value)} type="number" placeholder="3" /></div></Panel>
-          <Panel title="Trader state" icon={<ClipboardPenLine className="h-4 w-4" />}><SelectField label="Before-trading state" value={form.preMarketMood} onChange={(value) => updateForm("preMarketMood", value)} options={["calm", "focused", "neutral", "tired", "stressed", "frustrated", "overconfident"]} /><p className="rounded-lg border border-[#3c391f] bg-[#0d0e0a] p-3 text-xs leading-5 text-[#aaa69a]">Your instrument is fixed to <strong className="text-[#efc95e]">XAUUSD</strong>, sessions are <strong className="text-[#efc95e]">London / New York</strong>, and every entry uses <strong className="text-[#efc95e]">M5</strong>.</p></Panel>
+          <Panel title="Trader state" icon={<ClipboardPenLine className="h-4 w-4" />}><SelectField label="Before-trading state" value={form.preMarketMood} onChange={(value) => updateForm("preMarketMood", value)} options={["calm", "focused", "neutral", "tired", "stressed", "frustrated", "overconfident"]} /><p className="rounded-lg border border-[#3c391f] bg-[#0d0e0a] p-3 text-xs leading-5 text-[#aaa69a]">Choose any market pair for each trade—Forex, metals, indices, or oil. Sessions remain <strong className="text-[#efc95e]">London / New York</strong>, and every entry uses <strong className="text-[#efc95e]">M5</strong>.</p></Panel>
         </div>
 
         <div className="mt-8 flex items-center justify-between"><div><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#ddb437]">Individual trades</p><h2 className="mt-1 font-display text-3xl tracking-wide text-white">EVERY TRADE. EVERY DATE.</h2></div><span className="rounded-full border border-[#5a4c20] bg-[#1d1b0d] px-3 py-1 text-xs font-bold text-[#e9c85d]">{trades.length} trade{trades.length === 1 ? "" : "s"}</span></div>
         <div className="mt-5 space-y-5">{trades.map((trade, index) => <TradeCard key={trade.clientId} trade={trade} index={index + 1} missingFields={validationByTrade[trade.clientId] ?? []} onPatch={(patch) => updateTrade(trade.clientId, patch)} onRemove={() => removeTrade(trade.clientId)} removable={trades.length > 1} />)}</div>
-        <Button onClick={addTrade} variant="outline" className="mt-5 w-full border-dashed border-[#dba71d]/55 bg-[#dba71d]/5 text-[#f0cc62] hover:bg-[#dba71d]/12 hover:text-[#fff0b2]"><CirclePlus className="mr-2 h-4 w-4" />Add another XAUUSD trade</Button>
+        <Button onClick={addTrade} variant="outline" className="mt-5 w-full border-dashed border-[#dba71d]/55 bg-[#dba71d]/5 text-[#f0cc62] hover:bg-[#dba71d]/12 hover:text-[#fff0b2]"><CirclePlus className="mr-2 h-4 w-4" />Add another market trade</Button>
 
         <div className="mt-8 border-t border-[#4a421e]/70 pt-7">
           <div className="mb-5 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[#79c669]" /><h2 className="font-display text-3xl tracking-wide text-white">END-OF-DAY REVIEW</h2></div>
@@ -267,11 +273,12 @@ function TradeCard({ trade, index, missingFields, onPatch, onRemove, removable }
   return (
     <article id={cardId} className={`scroll-mt-6 overflow-hidden rounded-xl border bg-[#0d0e0a] ${hasMissingFields ? "border-[#b74e46] shadow-[0_0_0_1px_rgba(183,78,70,.18)]" : "border-[#594a1d]"}`}>
       <div className="flex flex-col justify-between gap-4 border-b border-[#463d1e] bg-[#17160e] px-5 py-4 md:flex-row md:items-center">
-        <div><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#e3bc48]">Trade {String(index).padStart(2, "0")}</p><h3 className="mt-1 font-display text-2xl tracking-wide text-white">XAUUSD <span className="text-[#c79b27]">/ M5</span></h3></div>
+        <div><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#e3bc48]">Trade {String(index).padStart(2, "0")}</p><h3 className="mt-1 font-display text-2xl tracking-wide text-white">{trade.pair || "MARKET PAIR"} <span className="text-[#c79b27]">/ M5</span></h3></div>
         <div className="flex items-center gap-3"><div><Label className={`text-[10px] font-bold uppercase tracking-[0.14em] ${isMissing("tradingDay") ? "text-[#ff9a91]" : "text-[#f1cc63]"}`}>Trade date — required</Label><Input type="date" value={trade.tradingDay} onChange={(event) => onPatch({ tradingDay: event.target.value })} aria-invalid={isMissing("tradingDay")} aria-describedby={hasMissingFields ? `${cardId}-requirements` : undefined} className={`mt-1 h-10 border-2 bg-[#0a0b08] font-bold text-[#ffe39a] [color-scheme:dark] ${isMissing("tradingDay") ? "border-[#cb6057] focus:border-[#ff9a91]" : "border-[#dba71d]"}`} />{isMissing("tradingDay") && <p className="mt-1 max-w-44 text-[10px] leading-4 text-[#f99b92]">{REQUIRED_TRADE_FIELD_SUGGESTIONS.tradingDay}</p>}</div>{removable && <Button onClick={onRemove} variant="outline" size="icon" className="mt-5 border-[#6f322d] bg-transparent text-[#ee837a] hover:bg-[#5a201d] hover:text-white"><Minus className="h-4 w-4" /></Button>}</div>
       </div>
       {hasMissingFields && <div id={`${cardId}-requirements`} className="border-b border-[#7e332e]/70 bg-[#371613]/55 px-5 py-3 text-xs leading-5 text-[#ffaaa2]"><div className="flex gap-2"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><span><strong>Complete this trade:</strong> {missingFields.map((field) => REQUIRED_TRADE_FIELD_LABELS[field]).join(", ")}.</span></div><ul className="mt-2 space-y-1 border-t border-[#7e332e]/35 pt-2 text-[#ffc0ba]">{missingFields.map((field) => <li key={field}><span className="font-semibold text-[#ffd8d3]">{REQUIRED_TRADE_FIELD_LABELS[field]}:</span> {REQUIRED_TRADE_FIELD_SUGGESTIONS[field]}</li>)}</ul></div>}
       <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+        <div><Label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9f9b8e]">Market pair</Label><Input list="market-pairs" value={trade.pair} onChange={(event) => onPatch({ pair: event.target.value.toUpperCase() })} placeholder="EURUSD" className="mt-1.5 h-9 border-[#403a20] bg-[#090a07] text-sm font-bold text-[#f4d36f] placeholder:text-[#5e5b51] focus:border-[#dba71d]" /><datalist id="market-pairs"><option value="XAUUSD" /><option value="XAGUSD" /><option value="EURUSD" /><option value="GBPUSD" /><option value="USDJPY" /><option value="AUDUSD" /><option value="USDCAD" /><option value="USDCHF" /><option value="NZDUSD" /><option value="EURJPY" /><option value="GBPJPY" /><option value="NAS100" /><option value="US30" /><option value="GER40" /><option value="UKOIL" /><option value="USOIL" /></datalist></div>
         <SelectField label="Session" value={trade.session} onChange={(value) => onPatch({ session: value as TradeDraft["session"] })} options={["London", "New York"]} />
         <SelectField label="Direction" value={trade.direction} onChange={(value) => onPatch({ direction: value as TradeDraft["direction"] })} options={["buy", "sell"]} />
         <SelectField label="Trade type" value={trade.tradeType} onChange={(value) => onPatch({ tradeType: value as TradeDraft["tradeType"] })} options={["scalp", "intraday", "news trade", "swing"]} />

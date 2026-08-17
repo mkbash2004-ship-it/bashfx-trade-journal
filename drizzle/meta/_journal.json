@@ -50,6 +50,20 @@
       "when": 1786953700615,
       "tag": "0006_normal_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1786962870806,
+      "tag": "0007_swift_sister_grimm",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1786964344058,
+      "tag": "0008_shocking_may_parker",
+      "breakpoints": true
     }
   ]
 }

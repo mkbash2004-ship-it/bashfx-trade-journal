@@ -1,25 +1,33 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getJournalReminderSettings, saveJournalReminderSettings, updateHeartbeatJob, createHeartbeatJob, deleteJournalDayForUser, deleteWeeklySummaryForUser } = vi.hoisted(() => ({
+const { getJournalReminderSettings, saveJournalReminderSettings, updateHeartbeatJob, createHeartbeatJob, deleteJournalDayForUser, deleteWeeklySummaryForUser, createFeedbackEntry, getAllFeedbackForModeration, moderateFeedbackEntry, updateTraderDisplayName } = vi.hoisted(() => ({
   getJournalReminderSettings: vi.fn(),
   saveJournalReminderSettings: vi.fn(),
   updateHeartbeatJob: vi.fn(),
   createHeartbeatJob: vi.fn(),
   deleteJournalDayForUser: vi.fn(),
   deleteWeeklySummaryForUser: vi.fn(),
+  createFeedbackEntry: vi.fn(),
+  getAllFeedbackForModeration: vi.fn(),
+  moderateFeedbackEntry: vi.fn(),
+  updateTraderDisplayName: vi.fn(),
 }));
 
 vi.mock("./db", () => ({
   createDailyJournalEntry: vi.fn(),
   createWeeklySummary: vi.fn(),
+  createFeedbackEntry,
   deleteJournalDayForUser,
   deleteWeeklySummaryForUser,
+  getAllFeedbackForModeration,
   getJournalReminderSettings,
   getTradesForWeek: vi.fn(),
   getWeeklySummaries: vi.fn(),
   getWeeklySummaryForUser: vi.fn(),
   saveJournalReminderSettings,
+  moderateFeedbackEntry,
   updateTradeForUser: vi.fn(),
+  updateTraderDisplayName,
 }));
 vi.mock("./_core/heartbeat", () => ({ createHeartbeatJob, updateHeartbeatJob }));
 vi.mock("./_core/imageGeneration", () => ({ generateImage: vi.fn() }));
@@ -27,6 +35,7 @@ vi.mock("./storage", () => ({ storageGetSignedUrl: vi.fn() }));
 
 import { appRouter } from "./routers";
 import { COOKIE_NAME } from "../shared/const";
+import { ENV } from "./_core/env";
 
 describe("journal.configureReminders", () => {
   beforeEach(() => {
@@ -127,5 +136,38 @@ describe("journal deletion controls", () => {
 
     await expect(makeCaller().journal.deleteJournalDay({ tradingDay })).resolves.toEqual({ deletedTrades: 3, deletedJournals: 1 });
     expect(deleteJournalDayForUser).toHaveBeenCalledWith(42, tradingDay);
+  });
+});
+
+describe("journal feedback and trader profile controls", () => {
+  const makeCaller = (openId = "member-42") => appRouter.createCaller({
+    user: { id: 42, openId, name: "Gold Trader", email: "gold@example.com", loginMethod: "manus", role: "user", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() },
+    req: { headers: { cookie: `${COOKIE_NAME}=session-token` }, protocol: "https" } as never,
+    res: {} as never,
+  });
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it("records only the authenticated member's genuine feedback", async () => {
+    createFeedbackEntry.mockResolvedValue({ id: 9 });
+    await expect(makeCaller().journal.submitFeedback({ rating: 5, comment: "The dated journal is clear and useful." })).resolves.toEqual({ submitted: true });
+    expect(createFeedbackEntry).toHaveBeenCalledWith(42, 5, "The dated journal is clear and useful.");
+  });
+
+  it("blocks non-owners from reviewing or moderating community feedback", async () => {
+    await expect(makeCaller().journal.moderationFeedback()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(makeCaller().journal.moderateFeedback({ feedbackId: 9, status: "approved" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("allows only the configured owner to moderate feedback", async () => {
+    moderateFeedbackEntry.mockResolvedValue({ id: 9, status: "approved" });
+    await expect(makeCaller(ENV.ownerOpenId).journal.moderateFeedback({ feedbackId: 9, status: "approved" })).resolves.toEqual({ updated: true });
+    expect(moderateFeedbackEntry).toHaveBeenCalledWith(9, "approved");
+  });
+
+  it("persists a chosen display name in the authenticated member profile", async () => {
+    updateTraderDisplayName.mockResolvedValue({ id: 42, traderDisplayName: "Arc MK Bash" });
+    await makeCaller().journal.saveTraderDisplayName({ traderDisplayName: "Arc MK Bash" });
+    expect(updateTraderDisplayName).toHaveBeenCalledWith(42, "Arc MK Bash");
   });
 });

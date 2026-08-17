@@ -10,6 +10,8 @@ import UploadTrades from "./pages/UploadTrades";
 import WeeklyTrades from "./pages/WeeklyTrades";
 import WeeklySummary from "./pages/WeeklySummary";
 import Tutorial from "./pages/Tutorial";
+import MonthlySummary from "./pages/MonthlySummary";
+import Community from "./pages/Community";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -19,6 +21,8 @@ function Router() {
       <Route path={"/upload"} component={UploadTrades} />
       <Route path={"/trades"} component={WeeklyTrades} />
       <Route path={"/summary"} component={WeeklySummary} />
+      <Route path={"/monthly-summary"} component={MonthlySummary} />
+      <Route path={"/community"} component={Community} />
       <Route path={"/tutorial"} component={Tutorial} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />

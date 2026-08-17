@@ -6,6 +6,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { sendJournalReminder } from "../journalReminderHandler";
+import { generateScheduledMonthlySummaries } from "../monthlySummaryHandler";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -38,6 +39,7 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   app.post("/api/scheduled/journal-reminder", sendJournalReminder);
+  app.post("/api/scheduled/monthly-summary", generateScheduledMonthlySummaries);
   // tRPC API
   app.use(
     "/api/trpc",

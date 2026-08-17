@@ -1,4 +1,4 @@
-import { double, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { double, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -6,6 +6,7 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
+  traderDisplayName: varchar("traderDisplayName", { length: 80 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -95,6 +96,21 @@ export const weeklySummaries = mysqlTable("weeklySummaries", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+export const monthlySummaries = mysqlTable("monthlySummaries", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  monthKey: varchar("monthKey", { length: 7 }).notNull(),
+  imageKey: varchar("imageKey", { length: 512 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [uniqueIndex("monthlySummaries_userId_monthKey_unique").on(table.userId, table.monthKey)]);
+
+export const monthlySummaryAutomation = mysqlTable("monthlySummaryAutomation", {
+  id: int("id").autoincrement().primaryKey(),
+  scheduleTaskUid: varchar("scheduleTaskUid", { length: 65 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export const journalReminderSettings = mysqlTable("journalReminderSettings", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().unique(),
@@ -119,8 +135,22 @@ export const journalReminderSettings = mysqlTable("journalReminderSettings", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+export const feedbackEntries = mysqlTable("feedbackEntries", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  rating: int("rating").notNull(),
+  comment: text("comment").notNull(),
+  status: varchar("status", { length: 16 }).notNull().default("pending"),
+  moderatedAt: timestamp("moderatedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export type TradeDocument = typeof tradeDocuments.$inferSelect;
 export type Trade = typeof trades.$inferSelect;
 export type DailyJournal = typeof dailyJournals.$inferSelect;
 export type WeeklySummary = typeof weeklySummaries.$inferSelect;
+export type MonthlySummary = typeof monthlySummaries.$inferSelect;
+export type MonthlySummaryAutomation = typeof monthlySummaryAutomation.$inferSelect;
 export type JournalReminderSettings = typeof journalReminderSettings.$inferSelect;
+export type FeedbackEntry = typeof feedbackEntries.$inferSelect;

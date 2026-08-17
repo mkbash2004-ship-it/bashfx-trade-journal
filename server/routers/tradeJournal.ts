@@ -3,14 +3,24 @@ import { parse as parseCookie } from "cookie";
 import { z } from "zod";
 import {
   createDailyJournalEntry,
+  createFeedbackEntry,
   createWeeklySummary,
   deleteJournalDayForUser,
   deleteWeeklySummaryForUser,
   getJournalReminderSettings,
+  getAllFeedbackForModeration,
+  getApprovedFeedback,
+  getMonthlySummaries,
+  getMonthlySummaryAutomation,
+  getMonthlySummaryForUser,
+  getTraderProfile,
   getTradesForWeek,
   getWeeklySummaries,
   getWeeklySummaryForUser,
+  moderateFeedbackEntry,
+  saveMonthlySummaryAutomation,
   saveJournalReminderSettings,
+  updateTraderDisplayName,
   updateTradeForUser,
 } from "../db";
 import { createHeartbeatJob, updateHeartbeatJob } from "../_core/heartbeat";
@@ -21,9 +31,12 @@ import { calculateWeeklyMetrics, formatTradeRowsForPrompt, getCurrentWeekWindow 
 import { COOKIE_NAME } from "../../shared/const";
 import { buildReminderJobs, defaultReminderTimes } from "../reminderSchedule";
 import { buildCustomNotificationSettings } from "../customNotificationUtils";
+import { ENV } from "../_core/env";
+import { generateMonthlySummaryForUser } from "../monthlySummaryService";
 
 const optionalNumber = z.number().nullable();
 const directTradeInput = z.object({
+  pair: z.string().trim().toUpperCase().min(3).max(24).regex(/^[A-Z0-9._/-]+$/, "Use a valid market symbol such as XAUUSD or EURUSD."),
   tradingDay: z.coerce.date(),
   session: z.enum(["London", "New York"]),
   direction: z.enum(["buy", "sell"]),
@@ -89,10 +102,67 @@ export const tradeJournalRouter = router({
     return { weekStart, weekEnd, metrics: calculateWeeklyMetrics(items) };
   }),
 
+  traderProfile: protectedProcedure.query(async ({ ctx }) => getTraderProfile(ctx.user.id)),
+
+  saveTraderDisplayName: protectedProcedure.input(z.object({ traderDisplayName: z.string().trim().min(2).max(80) })).mutation(async ({ ctx, input }) => updateTraderDisplayName(ctx.user.id, input.traderDisplayName)),
+
+  publicFeedback: protectedProcedure.query(async () => getApprovedFeedback()),
+
+  submitFeedback: protectedProcedure.input(z.object({ rating: z.number().int().min(1).max(5), comment: z.string().trim().min(8).max(1000) })).mutation(async ({ ctx, input }) => {
+    await createFeedbackEntry(ctx.user.id, input.rating, input.comment);
+    return { submitted: true };
+  }),
+
+  moderationFeedback: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.openId !== ENV.ownerOpenId) throw new TRPCError({ code: "FORBIDDEN" });
+    return getAllFeedbackForModeration();
+  }),
+
+  moderateFeedback: protectedProcedure.input(z.object({ feedbackId: z.number().int().positive(), status: z.enum(["approved", "hidden"]) })).mutation(async ({ ctx, input }) => {
+    if (ctx.user.openId !== ENV.ownerOpenId) throw new TRPCError({ code: "FORBIDDEN" });
+    await moderateFeedbackEntry(input.feedbackId, input.status);
+    return { updated: true };
+  }),
+
   currentWeek: protectedProcedure.query(async ({ ctx }) => {
     const { weekStart, weekEnd } = getCurrentWeekWindow();
     const items = await getTradesForWeek(ctx.user.id, weekStart, weekEnd);
     return { weekStart, weekEnd, metrics: calculateWeeklyMetrics(items), trades: items };
+  }),
+
+  monthlySummaries: protectedProcedure.query(async ({ ctx }) => getMonthlySummaries(ctx.user.id)),
+
+  monthlySummaryAsset: protectedProcedure.input(z.object({ summaryId: z.number().int().positive() })).query(async ({ ctx, input }) => {
+    const summary = await getMonthlySummaryForUser(ctx.user.id, input.summaryId);
+    if (!summary) throw new TRPCError({ code: "NOT_FOUND", message: "Monthly summary not found" });
+    return { url: await storageGetSignedUrl(summary.imageKey), createdAt: summary.createdAt, monthKey: summary.monthKey };
+  }),
+
+  generateMonthlySummary: protectedProcedure.mutation(async ({ ctx }) => {
+    const generated = await generateMonthlySummaryForUser(ctx.user.id);
+    if (!generated) throw new TRPCError({ code: "BAD_REQUEST", message: "Add at least one dated trade this month before generating the monthly summary." });
+    return { summaryId: generated.summary!.id, monthKey: generated.monthKey };
+  }),
+
+  monthlyAutomationStatus: protectedProcedure.query(async ({ ctx }) => ({
+    enabled: Boolean((await getMonthlySummaryAutomation())?.scheduleTaskUid),
+    canManage: ctx.user.openId === ENV.ownerOpenId,
+    schedule: "20:00 UTC on the first day of every month, reviewing the month that just closed",
+  })),
+
+  enableMonthlyAutomation: protectedProcedure.mutation(async ({ ctx }) => {
+    if (ctx.user.openId !== ENV.ownerOpenId) throw new TRPCError({ code: "FORBIDDEN", message: "Only the project owner can enable monthly automation." });
+    if (process.env.NODE_ENV !== "production") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Publish the app before enabling monthly automation." });
+    const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
+    if (!sessionToken) throw new TRPCError({ code: "UNAUTHORIZED", message: "Sign in again before enabling monthly automation." });
+    const existing = await getMonthlySummaryAutomation();
+    if (existing?.scheduleTaskUid) {
+      await updateHeartbeatJob(existing.scheduleTaskUid, { cron: "0 0 20 1 * *", path: "/api/scheduled/monthly-summary", description: "Bashfx VIP GOLD ROOM automatic month-end summaries", enable: true }, sessionToken);
+      return { enabled: true };
+    }
+    const created = await createHeartbeatJob({ name: "bashfx-vip-gold-room-monthly-summary", cron: "0 0 20 1 * *", path: "/api/scheduled/monthly-summary", description: "Bashfx VIP GOLD ROOM automatic month-end summaries" }, sessionToken);
+    await saveMonthlySummaryAutomation(created.taskUid);
+    return { enabled: true };
   }),
 
   createDailyJournal: protectedProcedure.input(directJournalInput).mutation(async ({ ctx, input }) => {
@@ -183,16 +253,17 @@ export const tradeJournalRouter = router({
     const { weekStart, weekEnd } = getCurrentWeekWindow();
     const tradeList = await getTradesForWeek(ctx.user.id, weekStart, weekEnd);
     if (tradeList.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Add at least one dated trade before generating the weekly summary." });
-    const metrics = calculateWeeklyMetrics(tradeList);
-    const referenceUrl = await storageGetSignedUrl(referenceImageKey);
+    const [metrics, referenceUrl, profile] = [calculateWeeklyMetrics(tradeList), await storageGetSignedUrl(referenceImageKey), await getTraderProfile(ctx.user.id)];
+    const traderName = profile?.traderDisplayName?.trim() || profile?.name?.trim() || "Bashfx Trader";
     const weekLabel = `${weekStart.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${new Date(weekEnd.getTime() - 1).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
-    const prompt = `Create a premium vertical 2:3 weekly XAUUSD performance graphic for Bashfx VIP GOLD ROOM. Use the provided reference image as the layout and brand-style reference. Match its luxury black background, brushed metallic gold borders, white condensed headings, gold accents, green wins, red losses, crown motif, and boxed sections. Do not copy dates or trade figures from the reference.
+    const prompt = `Create a premium vertical 2:3 weekly multi-market performance graphic for Bashfx VIP GOLD ROOM. Use the provided reference image as the layout and brand-style reference. Match its luxury black background, brushed metallic gold borders, white condensed headings, gold accents, green wins, red losses, crown motif, and boxed sections. Do not copy dates or trade figures from the reference.
 
 Exact content to render:
 Brand: BASHFX
 Subtitle: VIP GOLD ROOM
+Trader: ${traderName}
 Main headline: WEEKLY SUMMARY
-Banner: XAUUSD M5 JOURNAL RESULTS
+Banner: MULTI-MARKET M5 JOURNAL RESULTS
 Week: ${weekLabel}
 Trade table columns: DATE | PAIR | SESSION | DIRECTION | PIPS | RESULT
 Trade rows:

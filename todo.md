@@ -45,3 +45,11 @@
 - [x] Update weekly summaries to show one net pip result calculated as winning pips minus losing pips.
 - [x] Carry each News Trade designation into the generated weekly-summary image.
 - [x] Add confirmed deletion controls for individual weekly summaries and daily journal entries, including their associated trades.
+- [ ] Add authenticated public in-app feedback submission, visible genuine reviews, and owner moderation controls.
+- [ ] Add a Trader Name questionnaire field that persists each user's chosen display name and shows it on weekly results and generated summary images.
+- [ ] Add a full-month trading summary that is created automatically at the end of each month and announced privately when ready.
+- [ ] Replace the XAUUSD-only journal constraint with selectable Forex and commodity pairs that carry into weekly and monthly summaries.
+- [ ] Add feedback submission, moderation, and owner-permission regression tests, with clear Community-page error states.
+- [ ] Show the saved Trader Name in weekly result history and verify it is included in weekly and monthly images.
+- [ ] Make month-end scheduling durable without requiring a first page visit, then test idempotent callback generation and completion notification.
+- [ ] Remove remaining XAUUSD-only wording and logic from the dashboard, weekly log, and weekly-summary pages.

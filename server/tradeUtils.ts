@@ -87,11 +87,17 @@ export function getCurrentWeekWindow(reference = new Date()) {
   return { weekStart: local, weekEnd: end };
 }
 
+export function getMonthWindow(reference = new Date()) {
+  const monthStart = new Date(reference.getFullYear(), reference.getMonth(), 1);
+  const monthEnd = new Date(reference.getFullYear(), reference.getMonth() + 1, 1);
+  return { monthStart, monthEnd, monthKey: monthStart.toISOString().slice(0, 7) };
+}
+
 export function formatTradeRowsForPrompt(items: Trade[]) {
   return items.map((trade, index) => {
     const result = cleanResult(trade.result);
     const signedPips = trade.pips === null ? null : result === "loss" ? -Math.abs(trade.pips) : result === "win" ? Math.abs(trade.pips) : 0;
     const session = `${trade.session || "Session n/a"}${trade.tradeType === "news trade" ? " • NEWS TRADE" : ""}`;
-    return `${index + 1}. ${new Date(trade.tradingDay).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} | XAUUSD | ${session} | ${trade.direction.toUpperCase()} | ${signedPips === null ? "Pips n/a" : `${signedPips > 0 ? "+" : ""}${signedPips} PIPS`} | ${result.toUpperCase()}`;
+    return `${index + 1}. ${new Date(trade.tradingDay).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} | ${trade.pair || "PAIR N/A"} | ${session} | ${trade.direction.toUpperCase()} | ${signedPips === null ? "Pips n/a" : `${signedPips > 0 ? "+" : ""}${signedPips} PIPS`} | ${result.toUpperCase()}`;
   }).join("\n");
 }

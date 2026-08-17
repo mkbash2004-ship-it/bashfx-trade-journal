@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { CirclePlay, ClipboardList, Crown, LayoutDashboard, LogOut, PanelLeft, Sparkles, UploadCloud } from "lucide-react";
+import { CalendarRange, CirclePlay, ClipboardList, Crown, LayoutDashboard, LogOut, MessageSquareHeart, PanelLeft, Sparkles, UploadCloud } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -32,6 +32,8 @@ const menuItems = [
   { icon: UploadCloud, label: "Daily journal", path: "/upload" },
   { icon: ClipboardList, label: "Weekly log", path: "/trades" },
   { icon: Sparkles, label: "Weekly summary", path: "/summary" },
+  { icon: CalendarRange, label: "Monthly summary", path: "/monthly-summary" },
+  { icon: MessageSquareHeart, label: "Community", path: "/community" },
   { icon: CirclePlay, label: "Help & tutorial", path: "/tutorial" },
 ];
 
@@ -67,7 +69,7 @@ export default function DashboardLayout({
           <p className="gold-text font-display text-xl tracking-[0.2em]">BASHFX VIP GOLD ROOM</p>
           <h1 className="mt-2 font-display text-5xl tracking-wide text-white md:text-6xl">TRADE JOURNAL</h1>
           <div className="gold-line mx-auto my-6 h-px w-28" />
-          <p className="mx-auto max-w-sm text-sm leading-6 text-[#b7b4a8]">A private XAUUSD M5 workspace for recording dated London and New York trades, then building your weekly Gold Room summary.</p>
+          <p className="mx-auto max-w-sm text-sm leading-6 text-[#b7b4a8]">A private multi-market workspace for recording dated trades and building your weekly Gold Room summary.</p>
           <Button onClick={() => startLogin()} size="lg" className="mt-8 h-12 w-full bg-[#dba71d] font-bold text-[#130e03] shadow-[0_8px_30px_rgba(219,167,29,.2)] hover:bg-[#f3c95a]">Sign in to your journal</Button>
         </div>
       </div>

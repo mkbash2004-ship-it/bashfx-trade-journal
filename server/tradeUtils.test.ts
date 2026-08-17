@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateWeeklyMetrics, formatTradeRowsForPrompt, getCurrentWeekWindow, normalizeExtractedTrade } from "./tradeUtils";
+import { calculateWeeklyMetrics, formatTradeRowsForPrompt, getCurrentWeekWindow, getMonthWindow, normalizeExtractedTrade } from "./tradeUtils";
 
 describe("trade journal calculations", () => {
   it("normalizes the trade details returned by extraction", () => {
@@ -38,5 +38,12 @@ describe("trade journal calculations", () => {
     const window = getCurrentWeekWindow(new Date("2026-08-16T12:00:00Z"));
     expect(window.weekStart.toISOString().slice(0, 10)).toBe("2026-08-10");
     expect(window.weekEnd.toISOString().slice(0, 10)).toBe("2026-08-17");
+  });
+
+  it("uses the complete calendar month for monthly summaries", () => {
+    const window = getMonthWindow(new Date("2026-02-18T12:00:00Z"));
+    expect(window.monthKey).toBe("2026-02");
+    expect(window.monthStart.toISOString().slice(0, 10)).toBe("2026-02-01");
+    expect(window.monthEnd.toISOString().slice(0, 10)).toBe("2026-03-01");
   });
 });

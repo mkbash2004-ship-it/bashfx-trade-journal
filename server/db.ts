@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { dailyJournals, InsertUser, journalReminderSettings, tradeDocuments, trades, users, weeklySummaries } from "../drizzle/schema";
+import { dailyJournals, feedbackEntries, InsertUser, journalReminderSettings, monthlySummaries, monthlySummaryAutomation, tradeDocuments, trades, users, weeklySummaries } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -48,6 +48,7 @@ function getInsertedId(result: unknown): number {
 }
 
 export type JournalTradeRecord = {
+  pair: string;
   tradingDay: Date;
   session: string;
   direction: string;
@@ -89,7 +90,6 @@ export async function createDailyJournalEntry(input: {
     ...trade,
     userId: input.userId,
     documentId: null,
-    pair: "XAUUSD",
     timeframe: "M5",
     confidence: 100,
   })));
@@ -100,6 +100,19 @@ export async function getTradesForWeek(userId: number, weekStart: Date, weekEnd:
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
   return db.select().from(trades).where(and(eq(trades.userId, userId), gte(trades.tradingDay, weekStart), lt(trades.tradingDay, weekEnd))).orderBy(desc(trades.tradingDay), desc(trades.id));
+}
+
+export async function getTradesForRange(userId: number, rangeStart: Date, rangeEnd: Date) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return db.select().from(trades).where(and(eq(trades.userId, userId), gte(trades.tradingDay, rangeStart), lt(trades.tradingDay, rangeEnd))).orderBy(desc(trades.tradingDay), desc(trades.id));
+}
+
+export async function getUsersWithTradesForRange(rangeStart: Date, rangeEnd: Date) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const rows = await db.select({ userId: trades.userId }).from(trades).where(and(gte(trades.tradingDay, rangeStart), lt(trades.tradingDay, rangeEnd)));
+  return Array.from(new Set(rows.map(row => row.userId)));
 }
 
 export async function updateTradeForUser(userId: number, tradeId: number, values: Partial<JournalTradeRecord> & { tradingDay?: Date }) {
@@ -127,6 +140,86 @@ export async function getWeeklySummaryForUser(userId: number, summaryId: number)
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
   return (await db.select().from(weeklySummaries).where(and(eq(weeklySummaries.id, summaryId), eq(weeklySummaries.userId, userId))).limit(1))[0];
+}
+
+export async function createMonthlySummary(userId: number, monthKey: string, imageKey: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.insert(monthlySummaries).values({ userId, monthKey, imageKey }).onDuplicateKeyUpdate({ set: { imageKey } });
+  return getMonthlySummaryForUserAndMonth(userId, monthKey);
+}
+
+export async function getMonthlySummaries(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return db.select().from(monthlySummaries).where(eq(monthlySummaries.userId, userId)).orderBy(desc(monthlySummaries.monthKey));
+}
+
+export async function getMonthlySummaryForUser(userId: number, summaryId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return (await db.select().from(monthlySummaries).where(and(eq(monthlySummaries.userId, userId), eq(monthlySummaries.id, summaryId))).limit(1))[0];
+}
+
+export async function getMonthlySummaryForUserAndMonth(userId: number, monthKey: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return (await db.select().from(monthlySummaries).where(and(eq(monthlySummaries.userId, userId), eq(monthlySummaries.monthKey, monthKey))).limit(1))[0];
+}
+
+export async function getTraderProfile(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return (await db.select({ traderDisplayName: users.traderDisplayName, name: users.name }).from(users).where(eq(users.id, userId)).limit(1))[0];
+}
+
+export async function updateTraderDisplayName(userId: number, traderDisplayName: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.update(users).set({ traderDisplayName }).where(eq(users.id, userId));
+  return getTraderProfile(userId);
+}
+
+export async function createFeedbackEntry(userId: number, rating: number, comment: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.insert(feedbackEntries).values({ userId, rating, comment, status: "pending" });
+}
+
+export async function getApprovedFeedback() {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return db.select({ id: feedbackEntries.id, rating: feedbackEntries.rating, comment: feedbackEntries.comment, createdAt: feedbackEntries.createdAt, traderDisplayName: users.traderDisplayName, accountName: users.name }).from(feedbackEntries).leftJoin(users, eq(feedbackEntries.userId, users.id)).where(eq(feedbackEntries.status, "approved")).orderBy(desc(feedbackEntries.createdAt));
+}
+
+export async function getAllFeedbackForModeration() {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return db.select({ id: feedbackEntries.id, rating: feedbackEntries.rating, comment: feedbackEntries.comment, status: feedbackEntries.status, createdAt: feedbackEntries.createdAt, traderDisplayName: users.traderDisplayName, accountName: users.name }).from(feedbackEntries).leftJoin(users, eq(feedbackEntries.userId, users.id)).orderBy(desc(feedbackEntries.createdAt));
+}
+
+export async function moderateFeedbackEntry(feedbackId: number, status: "approved" | "hidden") {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.update(feedbackEntries).set({ status, moderatedAt: new Date() }).where(eq(feedbackEntries.id, feedbackId));
+}
+
+export async function getMonthlySummaryAutomation() {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return (await db.select().from(monthlySummaryAutomation).limit(1))[0];
+}
+
+export async function saveMonthlySummaryAutomation(scheduleTaskUid: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const existing = await getMonthlySummaryAutomation();
+  if (existing) {
+    await db.update(monthlySummaryAutomation).set({ scheduleTaskUid }).where(eq(monthlySummaryAutomation.id, existing.id));
+    return getMonthlySummaryAutomation();
+  }
+  await db.insert(monthlySummaryAutomation).values({ scheduleTaskUid });
+  return getMonthlySummaryAutomation();
 }
 
 export async function deleteWeeklySummaryForUser(userId: number, summaryId: number) {
