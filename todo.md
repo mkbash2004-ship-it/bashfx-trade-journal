@@ -39,3 +39,4 @@
 - [x] Export and deliver a subtitle-free version of the AI-voiced Bashfx VIP GOLD ROOM tutorial.
 - [x] Upload the touch-guided tutorial as a deployable web asset and add an in-app Help & Tutorial video player.
 - [x] Resume the in-app tutorial video integration without rolling back the Bashfx VIP GOLD ROOM project.
+- [x] Diagnose the daily-journal validation message shown after adding a trade and make every missing required field immediately identifiable on mobile.
