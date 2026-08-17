@@ -11,7 +11,7 @@
 - [x] Add generated-summary preview, historical access, and PNG download/export.
 - [x] Add automated tests for trade math and extraction normalization.
 - [x] Verify desktop and mobile UI rendering, type checks, and core flows before delivery.
-- [ ] Verify the upload-to-extraction-to-summary flow with the first real trading-day JPG, PNG, or PDF added by the user; no fabricated trade records will be inserted for testing.
+- [x] Superseded the image-upload validation flow with the approved structured daily-journal workflow; no fabricated trade records were inserted.
 - [x] Replace all BashFX labels with the approved "Bashfx VIP GOLD ROOM" brand name during the questionnaire-led journal revision.
 - [x] Configure the approved daily-journal form for XAUUSD only, London/New York sessions only, and M5 as the fixed default timeframe.
 - [x] Make the date a mandatory, prominent, individually saved field on every trade card and use it as the authoritative weekly-summary grouping date.
