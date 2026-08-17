@@ -54,6 +54,9 @@
 - [x] Make month-end scheduling durable without requiring a first page visit, then test idempotent callback generation and completion notification.
 - [x] Remove remaining XAUUSD-only wording and logic from the dashboard, weekly log, and weekly-summary pages.
 - [x] Verify the Weekly Trade Log shows non-XAUUSD selected pairs correctly on mobile.
-- [ ] Revise the in-app tutorial video to cover multi-pair selection, Trader Name, Community feedback, and automatic monthly summaries.
-- [ ] Upload and replace the embedded tutorial video with the revised version after verifying playback in the app.
+- [x] Revise the in-app tutorial video to cover multi-pair selection, Trader Name, Community feedback, and automatic monthly summaries.
+- [x] Upload and replace the embedded tutorial video with the revised version after verifying playback in the app.
 - [x] Change automatic monthly-summary scheduling and displayed timing from UTC to WAT (UTC+1).
+- [x] Start the embedded revised tutorial in the app and confirm in-player playback succeeds after the asset replacement.
+- [ ] Publish the revised tutorial metadata so the live app natively references the new MP4 and expanded learning steps.
+- [ ] Verify the published tutorial player starts the revised MP4 without a manual browser override.

@@ -10,7 +10,7 @@ export default function Tutorial() {
         <div className="max-w-3xl">
           <div className="flex items-center gap-2 text-[#e2b540]"><HelpCircle className="h-4 w-4" /><span className="text-[11px] font-bold uppercase tracking-[0.17em]">Bashfx VIP Gold Room / Member guide</span></div>
           <h1 className="mt-3 font-display text-5xl tracking-wide text-white md:text-6xl">HOW TO USE YOUR JOURNAL</h1>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-[#b7b4a8]">Watch the complete touch-guided walkthrough to record your market trades, review the weekly log, create your branded result image, and manage private reminders.</p>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-[#b7b4a8]">Watch the complete touch-guided walkthrough for multi-pair trade capture, Trader Name reports, weekly and automatic monthly summaries, genuine Community feedback, and private WAT reminders.</p>
         </div>
       </section>
 

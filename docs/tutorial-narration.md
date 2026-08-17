@@ -1,0 +1,17 @@
+# Revised Tutorial Narration — Algieba Voice
+
+**Voice direction:** Speak in English with a warm, smooth male instructional tone, at a calm, confident pace. Keep the delivery friendly and precise; leave small natural pauses between steps. No background music.
+
+| Span | Target time | Spoken narration |
+|---|---:|---|
+| 1 | 00:00–00:22 | Welcome to Bashfx VIP GOLD ROOM, your private multi-market M5 trading journal. This walkthrough shows the complete routine: record each trade, review your weekly performance, create branded reports, and keep your trading process organised. |
+| 2 | 00:22–00:45 | Start on the dashboard. Your weekly snapshot keeps total trades, win rate, net pips, and profit and loss in one place. Use the sidebar to move between the Daily journal, Weekly log, Weekly summary, Monthly summary, Community, and this help page. |
+| 3 | 00:45–01:08 | Select Daily journal whenever you are ready to record your trading day. Begin with the market context, then add a trade card for every position you took. There is no fixed limit: add as many separate trade cards as your day requires. |
+| 4 | 01:08–01:32 | The trade date is essential. Give every individual trade its own correct date before saving. This date is what places the trade in the correct daily group, weekly log, and final report. Then confirm the London or New York session; the journal is designed for your M5 workflow. |
+| 5 | 01:32–01:55 | Next, choose the market pair for that specific trade. XAUUSD is ready by default, but you can select from Forex pairs, metals, indices, and oil markets. Choose the exact symbol you traded, then record direction, outcome, pips, and your reflection. |
+| 6 | 01:55–02:18 | Before you save, set your Trader Name. It is stored for your account and appears on your weekly and monthly result graphics, so each exported report is clearly yours. You only need to update it when you want to change the displayed name. |
+| 7 | 02:18–02:42 | Open the Weekly log to review the entries you have made. Trades are grouped by their individual dates and retain their selected pairs. Check the values carefully here; you can edit a trade when needed, or remove an entire dated day if it should not remain in your journal. |
+| 8 | 02:42–03:08 | When the ledger is correct, open Weekly summary. The page calculates one net-pip result by combining your wins and losses. It also carries a News Trade designation into the report. Select Generate Gold Room summary to create your branded weekly image, then download the PNG whenever you need it. |
+| 9 | 03:08–03:35 | Monthly Summary gives you the wider view. You can generate the current month manually whenever you are ready. The automatic month-end workflow also produces the month that just closed at 01:05 WAT on the first day of each month, then sends a private readiness notice. |
+| 10 | 03:35–03:57 | The Community page is for genuine member feedback. Leave your honest experience with the journal, and it will appear publicly only after owner approval. The moderation queue helps keep the community useful and authentic for every trader. |
+| 11 | 03:57–04:18 | Finally, use the reminder controls on Weekly summary to set daily, Friday, and Saturday prompts in WAT. You can customise each notification, save the text without changing active reminders, and use the clear Enable or Pause controls whenever you need. Record, review, generate, and improve — that is the Bashfx VIP GOLD ROOM workflow. |
