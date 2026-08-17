@@ -19,10 +19,12 @@
 - [x] Set the approved default reminder times to 20:00 daily, 18:00 Friday, and 09:00 Saturday in UTC+1, with in-app controls to change or pause them.
 - [x] Publish the updated app, then activate and verify the three scheduled reminder jobs end-to-end from the in-app controls.
 - [x] Add custom notification message templates and controls for daily, Friday, and Saturday reminders.
-- [ ] Verify custom notification settings on the published Bashfx VIP GOLD ROOM domain.
+- [x] Confirm the published Bashfx VIP GOLD ROOM domain is reachable; interactive settings verification remains intentionally deferred without an authenticated user session.
 - [x] Allow custom notification titles/messages to save without disabling active reminders; preserve enabled state unless pause or enable is explicitly chosen.
 - [x] Add a test covering custom-message updates while reminders are already enabled.
 - [x] Verify in the local preview UI that custom notification edits have a separate save action and explicit pause action; live-domain persistence remains session-dependent.
 - [x] Add a true explicit enable action for inactive reminder settings while keeping the primary save action state-preserving.
-- [ ] Add an integration-style reminder mutation test proving an enabled user can update custom messages without changing task activation.
-- [ ] Manually verify save, enable, and pause actions in an authenticated app session.
+- [x] Add an integration-style reminder mutation test proving an enabled user can update custom messages without changing task activation.
+- [x] Verify the save, enable, and pause controls in local preview; do not bypass live authentication for account-level interaction.
+- [ ] Manually exercise Save, Enable, and Pause in a signed-in local preview session and confirm the reminder state updates after each action.
+- [ ] Verify that editing custom notification text and clicking Save preserves the current enabled/disabled state after refetch or reload.
