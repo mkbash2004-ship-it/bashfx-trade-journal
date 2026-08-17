@@ -17,4 +17,6 @@
 - [x] Make the date a mandatory, prominent, individually saved field on every trade card and use it as the authoritative weekly-summary grouping date.
 - [x] Add configurable end-of-day journal reminders plus Friday-evening and Saturday-morning weekly-summary prompts.
 - [x] Set the approved default reminder times to 20:00 daily, 18:00 Friday, and 09:00 Saturday in UTC+1, with in-app controls to change or pause them.
-- [ ] Publish the updated app, then activate and verify the three scheduled reminder jobs end-to-end from the in-app controls.
+- [x] Publish the updated app, then activate and verify the three scheduled reminder jobs end-to-end from the in-app controls.
+- [ ] Add custom notification message templates and controls for daily, Friday, and Saturday reminders.
+- [ ] Verify custom notification settings on the published Bashfx VIP GOLD ROOM domain.
