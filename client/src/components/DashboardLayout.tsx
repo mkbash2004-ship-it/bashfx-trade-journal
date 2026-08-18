@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { CalendarRange, CirclePlay, ClipboardList, Crown, LayoutDashboard, LogOut, MessageSquareHeart, PanelLeft, Sparkles, UploadCloud } from "lucide-react";
+import { Archive, CalendarRange, CirclePlay, ClipboardList, Crown, LayoutDashboard, LogOut, MessageSquareHeart, PanelLeft, Sparkles, UploadCloud } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -33,6 +33,7 @@ const menuItems = [
   { icon: ClipboardList, label: "Weekly log", path: "/trades" },
   { icon: Sparkles, label: "Weekly summary", path: "/summary" },
   { icon: CalendarRange, label: "Monthly summary", path: "/monthly-summary" },
+  { icon: Archive, label: "Backup & export", path: "/backup" },
   { icon: MessageSquareHeart, label: "Community", path: "/community" },
   { icon: CirclePlay, label: "Help & tutorial", path: "/tutorial" },
 ];

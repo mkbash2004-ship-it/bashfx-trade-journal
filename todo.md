@@ -60,3 +60,7 @@
 - [x] Start the embedded revised tutorial in the app and confirm in-player playback succeeds after the asset replacement.
 - [x] Publish the revised tutorial metadata so the live app natively references the new MP4 and expanded learning steps.
 - [x] Verify the published tutorial player starts the revised MP4 without a manual browser override.
+- [x] Expand the Backup & Export CSV download to cover daily journals, trades, report metadata, reminder preferences, and source-document metadata.
+- [x] Include weekly and monthly summary metadata and safe download links in the full journal backup.
+- [x] Add authenticated server-side backup procedures and regression tests that enforce per-user data isolation.
+- [ ] Verify the signed-in Backup & Export page in a rendered session and publish the completed export controls.

@@ -9,6 +9,7 @@ import {
   deleteWeeklySummaryForUser,
   getJournalReminderSettings,
   getAllFeedbackForModeration,
+  getJournalBackupForUser,
   getApprovedFeedback,
   getMonthlySummaries,
   getMonthlySummaryAutomation,
@@ -150,6 +151,49 @@ export const tradeJournalRouter = router({
     canManage: ctx.user.openId === ENV.ownerOpenId,
     schedule: MONTH_END_WAT_LABEL,
   })),
+
+  backupExport: protectedProcedure.query(async ({ ctx }) => {
+    const backup = await getJournalBackupForUser(ctx.user.id);
+    const weeklySummaries = await Promise.all(backup.generatedWeeklySummaries.map(async ({ userId: _userId, imageKey, ...summary }) => ({
+      ...summary,
+      downloadUrl: await storageGetSignedUrl(imageKey),
+    })));
+    const monthlySummaries = await Promise.all(backup.generatedMonthlySummaries.map(async ({ userId: _userId, imageKey, ...summary }) => ({
+      ...summary,
+      downloadUrl: await storageGetSignedUrl(imageKey),
+    })));
+    const sourceDocuments = await Promise.all(backup.sourceDocuments.map(async ({ userId: _userId, storageKey, ...document }) => ({
+      ...document,
+      downloadUrl: await storageGetSignedUrl(storageKey),
+    })));
+    const reminderPreferences = backup.reminderSettings ? (() => {
+      const { id: _id, userId: _userId, dailyReminderTaskUid: _dailyTask, fridayReminderTaskUid: _fridayTask, saturdayReminderTaskUid: _saturdayTask, lastDailyReminderSentAt: _lastDaily, lastFridayReminderSentAt: _lastFriday, lastSaturdayReminderSentAt: _lastSaturday, ...preferences } = backup.reminderSettings;
+      return preferences;
+    })() : null;
+
+    return {
+      backupVersion: 1,
+      exportedAt: new Date(),
+      trader: {
+        displayName: backup.profile?.traderDisplayName?.trim() || backup.profile?.name?.trim() || "Bashfx Trader",
+      },
+      counts: {
+        dailyJournalEntries: backup.dailyJournalEntries.length,
+        trades: backup.tradeRecords.length,
+        weeklySummaries: weeklySummaries.length,
+        monthlySummaries: monthlySummaries.length,
+        sourceDocuments: sourceDocuments.length,
+      },
+      data: {
+        dailyJournalEntries: backup.dailyJournalEntries.map(({ userId: _userId, ...entry }) => entry),
+        trades: backup.tradeRecords.map(({ userId: _userId, ...trade }) => trade),
+        reminderPreferences,
+        weeklySummaries,
+        monthlySummaries,
+        sourceDocuments,
+      },
+    };
+  }),
 
   enableMonthlyAutomation: protectedProcedure.mutation(async ({ ctx }) => {
     if (ctx.user.openId !== ENV.ownerOpenId) throw new TRPCError({ code: "FORBIDDEN", message: "Only the project owner can enable monthly automation." });

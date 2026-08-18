@@ -108,6 +108,30 @@ export async function getTradesForRange(userId: number, rangeStart: Date, rangeE
   return db.select().from(trades).where(and(eq(trades.userId, userId), gte(trades.tradingDay, rangeStart), lt(trades.tradingDay, rangeEnd))).orderBy(desc(trades.tradingDay), desc(trades.id));
 }
 
+export async function getJournalBackupForUser(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const [profile, dailyJournalEntries, tradeRecords, generatedWeeklySummaries, generatedMonthlySummaries, sourceDocuments, reminderSettings] = await Promise.all([
+    db.select({ traderDisplayName: users.traderDisplayName, name: users.name }).from(users).where(eq(users.id, userId)).limit(1),
+    db.select().from(dailyJournals).where(eq(dailyJournals.userId, userId)).orderBy(desc(dailyJournals.journalDate), desc(dailyJournals.id)),
+    db.select().from(trades).where(eq(trades.userId, userId)).orderBy(desc(trades.tradingDay), desc(trades.id)),
+    db.select().from(weeklySummaries).where(eq(weeklySummaries.userId, userId)).orderBy(desc(weeklySummaries.createdAt)),
+    db.select().from(monthlySummaries).where(eq(monthlySummaries.userId, userId)).orderBy(desc(monthlySummaries.monthKey)),
+    db.select().from(tradeDocuments).where(eq(tradeDocuments.userId, userId)).orderBy(desc(tradeDocuments.createdAt)),
+    db.select().from(journalReminderSettings).where(eq(journalReminderSettings.userId, userId)).limit(1),
+  ]);
+
+  return {
+    profile: profile[0] ?? null,
+    dailyJournalEntries,
+    tradeRecords,
+    generatedWeeklySummaries,
+    generatedMonthlySummaries,
+    sourceDocuments,
+    reminderSettings: reminderSettings[0] ?? null,
+  };
+}
+
 export async function getUsersWithTradesForRange(rangeStart: Date, rangeEnd: Date) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
