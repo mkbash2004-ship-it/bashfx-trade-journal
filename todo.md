@@ -64,3 +64,4 @@
 - [x] Include weekly and monthly summary metadata and safe download links in the full journal backup.
 - [x] Add authenticated server-side backup procedures and regression tests that enforce per-user data isolation.
 - [x] Confirm through the signed-in trader’s mobile session that the published Backup & Export page renders and the full JSON backup downloads successfully.
+- [x] Connect the Bashfx VIP GOLD ROOM project to the user's GitHub account and verify the code repository export.
