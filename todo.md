@@ -63,4 +63,4 @@
 - [x] Expand the Backup & Export CSV download to cover daily journals, trades, report metadata, reminder preferences, and source-document metadata.
 - [x] Include weekly and monthly summary metadata and safe download links in the full journal backup.
 - [x] Add authenticated server-side backup procedures and regression tests that enforce per-user data isolation.
-- [ ] Verify the signed-in Backup & Export page in a rendered session and publish the completed export controls.
+- [x] Confirm through the signed-in trader’s mobile session that the published Backup & Export page renders and the full JSON backup downloads successfully.
