@@ -79,4 +79,38 @@ describe("journal monthly encrypted backup support", () => {
     expect(recordEncryptedBackupArchive).toHaveBeenCalledWith(42, "bashfx-vip-gold-room-encrypted-backup-2026-08-19T01-05-00-000Z.bashfx-backup.json");
     expect(recordEncryptedBackupArchive).not.toHaveBeenCalledWith(43, expect.anything());
   });
+
+  it("returns the signed-in trader's reminder state and archive history for the Backup & Export support cards", async () => {
+    const settings = {
+      id: 3,
+      userId: 42,
+      enabled: 1,
+      timezone: "WAT",
+      reminderTime: "09:00",
+      reminderTaskUid: "backup-task-42",
+      lastReminderSentAt: null,
+      createdAt: new Date("2026-08-19T01:09:51.000Z"),
+      updatedAt: new Date("2026-08-19T01:09:51.000Z"),
+    };
+    const archiveHistory = [{
+      id: 7,
+      userId: 42,
+      fileName: "bashfx-vip-gold-room-encrypted-backup-2026-08-19T01-05-00-000Z.bashfx-backup.json",
+      createdAt: new Date("2026-08-19T01:05:00.000Z"),
+    }];
+    getBackupReminderSettings.mockResolvedValue(settings);
+    getEncryptedBackupArchives.mockResolvedValue(archiveHistory);
+
+    const result = await makeCaller(42).journal.backupSupportStatus();
+
+    expect(getBackupReminderSettings).toHaveBeenCalledWith(42);
+    expect(getEncryptedBackupArchives).toHaveBeenCalledWith(42);
+    expect(result).toMatchObject({
+      settings: { userId: 42, enabled: 1, timezone: "WAT", reminderTime: "09:00", reminderTaskUid: "backup-task-42" },
+      archiveHistory: [{ userId: 42, fileName: "bashfx-vip-gold-room-encrypted-backup-2026-08-19T01-05-00-000Z.bashfx-backup.json" }],
+      canActivate: true,
+      timezone: "WAT",
+      defaultReminderTime: "09:00",
+    });
+  });
 });

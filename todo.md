@@ -75,5 +75,7 @@
 - [x] Add the approved automatic monthly encrypted-backup reminder for 09:00 WAT on the first day of each month, with configurable timing and activation controls.
 - [x] Add a clear encrypted-archive restore guide that explains recovery without exposing the encryption password.
 - [x] Add a private backup-history card that records the latest locally created encrypted archive date.
-- [ ] Test, verify, and publish the backup reminder, restore guide, and history-card features.
-- [ ] Enable the monthly encrypted-backup reminder in the signed-in trader session and verify the active 09:00 WAT schedule.
+- [x] Test, verify, and publish the backup reminder, restore guide, and history-card features.
+- [x] Enable the monthly encrypted-backup reminder in the signed-in trader session and verify the active 09:00 WAT schedule.
+- [x] Verify the published signed-in Backup & Export page exposes the password-safe restore guide and correct encrypted-archive history state.
+- [x] Add targeted regression coverage for the backup-support response that drives the restore guide and archive-history card.
