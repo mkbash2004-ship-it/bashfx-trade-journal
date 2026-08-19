@@ -70,5 +70,5 @@
 - [x] Create a separate private GitHub repository for password-encrypted journal-data and media backup archives.
 - [x] Add a user-controlled encrypted backup export that never sends the encryption password to the server or stores readable journal data in the source repository.
 - [x] Add an in-app self-service handoff to the private GitHub archive repository so the user can upload future encrypted archives without agent intervention.
-- [ ] Re-test the self-service flow with a newly named encrypted archive and verify a distinct upload appears in the private GitHub archive repository.
+- [x] Re-test the self-service flow with a newly named encrypted archive and verify a distinct upload appears in the private GitHub archive repository.
 - [x] Upload the user-provided encrypted archive file to the separate private GitHub archive repository and verify its presence without opening it.
