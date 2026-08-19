@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
+import { closeMobileSidebarAfterNavigation } from "@/lib/mobileSidebarNavigation";
 import { Archive, CalendarRange, CirclePlay, ClipboardList, Crown, LayoutDashboard, LogOut, MessageSquareHeart, PanelLeft, Sparkles, UploadCloud } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -103,12 +104,16 @@ function DashboardLayoutContent({
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
+  const handleNavigation = (path: string) => {
+    setLocation(path);
+    closeMobileSidebarAfterNavigation(isMobile, setOpenMobile);
+  };
 
   useEffect(() => {
     if (isCollapsed) {
@@ -180,7 +185,7 @@ function DashboardLayoutContent({
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       isActive={isActive}
-                      onClick={() => setLocation(item.path)}
+                      onClick={() => handleNavigation(item.path)}
                       tooltip={item.label}
                       className={`h-11 transition-all font-medium ${isActive ? "bg-[#dba71d]/12 text-[#f4cf66]" : "text-[#a9a69a] hover:text-white"}`}
                     >

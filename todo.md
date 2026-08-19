@@ -79,3 +79,6 @@
 - [x] Enable the monthly encrypted-backup reminder in the signed-in trader session and verify the active 09:00 WAT schedule.
 - [x] Verify the published signed-in Backup & Export page exposes the password-safe restore guide and correct encrypted-archive history state.
 - [x] Add targeted regression coverage for the backup-support response that drives the restore guide and archive-history card.
+- [x] Replace the mobile dashboard-toggle button with a clear three-line hamburger menu control.
+- [x] Keep the dashboard navigation list intact and make each selection, including Weekly summary, open its destination directly and close the mobile menu.
+- [ ] Verify the revised mobile navigation interactively in mobile view, then publish and confirm the same behavior on the live site.
