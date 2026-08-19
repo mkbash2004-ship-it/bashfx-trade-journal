@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Sync a completed local project commit to the private GitHub source repository.
+# The hook deliberately never adds private database records, generated backups,
+# or external media: it pushes only the committed source tree.
+if git remote get-url github >/dev/null 2>&1; then
+  git push github HEAD:main
+fi

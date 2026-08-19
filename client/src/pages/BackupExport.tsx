@@ -1,7 +1,9 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { createEncryptedBackupArchive } from "@/lib/encryptedBackup";
 import { trpc } from "@/lib/trpc";
-import { Archive, CheckCircle2, Database, Download, FileJson, FileSpreadsheet, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { Archive, CheckCircle2, Database, Download, FileJson, FileKey, FileSpreadsheet, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { useState } from "react";
 
 type ExportRow = Record<string, unknown>;
 
@@ -50,6 +52,9 @@ function dayStamp(value: Date) {
 export default function BackupExport() {
   const { isAuthenticated } = useAuth();
   const backup = trpc.journal.backupExport.useQuery(undefined, { enabled: isAuthenticated, staleTime: 0 });
+  const [backupPassword, setBackupPassword] = useState("");
+  const [encryptionMessage, setEncryptionMessage] = useState<string | null>(null);
+  const [isEncrypting, setIsEncrypting] = useState(false);
   const exportedAt = backup.data?.exportedAt ? new Date(backup.data.exportedAt) : new Date();
   const fileDate = dayStamp(exportedAt);
 
@@ -61,6 +66,30 @@ export default function BackupExport() {
   const downloadCsv = () => {
     if (!backup.data) return;
     downloadFile(buildFullJournalCsv(backup.data), "text/csv", `bashfx-vip-gold-room-full-journal-${fileDate}.csv`);
+  };
+
+  const downloadEncryptedArchive = async () => {
+    if (!backup.data) return;
+    setEncryptionMessage(null);
+    setIsEncrypting(true);
+    try {
+      const archive = await createEncryptedBackupArchive(backup.data, backupPassword);
+      const filename = `bashfx-vip-gold-room-encrypted-backup-${fileDate}.bashfx-backup.json`;
+      const url = URL.createObjectURL(archive.blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setBackupPassword("");
+      setEncryptionMessage(archive.media.failed.length ? `Encrypted archive downloaded with ${archive.media.included} media file(s). ${archive.media.failed.length} file(s) were recorded in the media report because they could not be downloaded.` : `Encrypted archive downloaded with ${archive.media.included} media file(s). Upload this one file to your separate private GitHub archive repository.`);
+    } catch (error) {
+      setEncryptionMessage(error instanceof Error ? error.message : "The encrypted archive could not be created. Please try again.");
+    } finally {
+      setIsEncrypting(false);
+    }
   };
 
   const counts = backup.data?.counts;
@@ -84,6 +113,12 @@ export default function BackupExport() {
         {backup.error && <p className="mt-5 rounded-lg border border-[#7f3932] bg-[#351612] p-3 text-xs leading-5 text-[#f38b80]">{backup.error.message}</p>}
         <Button disabled={!backup.data || backup.isFetching} onClick={downloadJson} className="mt-7 h-12 w-full bg-[#dba71d] font-bold text-[#170f03] hover:bg-[#f3ce66] disabled:opacity-50"><FileJson className="mr-2 h-4 w-4" />Download full JSON backup</Button>
         <Button disabled={!backup.data || backup.isFetching} variant="outline" onClick={downloadCsv} className="mt-3 h-11 w-full border-[#705d25] bg-transparent font-bold text-[#eaca61] hover:bg-[#dba71d]/10 hover:text-[#ffe9a6] disabled:opacity-50"><FileSpreadsheet className="mr-2 h-4 w-4" />Download full journal CSV</Button>
+        <div className="mt-5 rounded-xl border border-[#705d25] bg-[#0b0c09] p-4">
+          <div className="flex items-start gap-3"><FileKey className="mt-0.5 h-4 w-4 shrink-0 text-[#e6bf50]" /><div><p className="text-sm font-semibold text-[#eee8d3]">Encrypted archive for private GitHub storage</p><p className="mt-1 text-xs leading-5 text-[#aaa79a]">Your password stays in this browser. It is never saved or sent to the server. The archive contains your journal data and attempts to include linked report images and original trade files.</p></div></div>
+          <input value={backupPassword} onChange={event => setBackupPassword(event.target.value)} type="password" minLength={12} autoComplete="new-password" placeholder="Create a private backup password (12+ characters)" className="mt-4 h-11 w-full rounded-lg border border-[#54481e] bg-[#13140e] px-3 text-sm text-[#f2ecda] outline-none placeholder:text-[#777260] focus:border-[#e2b43e]" />
+          <Button disabled={!backup.data || isEncrypting || backupPassword.trim().length < 12} onClick={downloadEncryptedArchive} className="mt-3 h-11 w-full bg-[#dba71d] font-bold text-[#170f03] hover:bg-[#f3ce66] disabled:opacity-50">{isEncrypting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileKey className="mr-2 h-4 w-4" />}Create encrypted archive</Button>
+          {encryptionMessage && <p className="mt-3 text-xs leading-5 text-[#c6c0ac]" role="status">{encryptionMessage}</p>}
+        </div>
         <Button disabled={backup.isFetching} variant="ghost" onClick={() => backup.refetch()} className="mt-3 h-10 w-full text-xs text-[#aaa79a] hover:bg-[#dba71d]/10 hover:text-[#f3ce66]">{backup.isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}Refresh export data</Button>
       </div>
 
@@ -99,8 +134,8 @@ export default function BackupExport() {
             ["Backup format", "JSON + CSV"],
           ].map(([label, value]) => <div key={label} className="rounded-xl border border-[#3e391f] bg-[#0b0c09] p-4"><p className="text-[11px] font-bold uppercase tracking-[.12em] text-[#847f70]">{label}</p><p className="mt-2 font-display text-2xl tracking-wide text-[#f1cc63]">{value}</p></div>)}
         </div>
-        <div className="mt-6 rounded-xl border border-[#4a421e] bg-[#15150e] p-4"><div className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#e6bf50]" /><div><p className="text-sm font-semibold text-[#eee8d3]">What your complete backup includes</p><p className="mt-1 text-xs leading-5 text-[#aaa79a]">The JSON archive includes every trade field, daily review, Trader Name, reminder preferences, and download links for generated weekly/monthly reports and original trade files. The CSV is an Excel-ready flat ledger of every recorded trade.</p></div></div></div>
-        <div className="mt-3 flex items-start gap-3 rounded-xl border border-[#3e391f] bg-[#0b0c09] p-4"><Download className="mt-0.5 h-4 w-4 shrink-0 text-[#dba71d]" /><p className="text-xs leading-5 text-[#9e9a8f]">Resource links in the JSON are provided for convenient immediate download. Save the linked images or uploaded files separately if you want to keep the actual files in your own archive.</p></div>
+        <div className="mt-6 rounded-xl border border-[#4a421e] bg-[#15150e] p-4"><div className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#e6bf50]" /><div><p className="text-sm font-semibold text-[#eee8d3]">What your complete backup includes</p><p className="mt-1 text-xs leading-5 text-[#aaa79a]">The JSON archive includes every trade field, daily review, Trader Name, reminder preferences, and download links for generated weekly/monthly reports and original trade files. The encrypted archive packages this journal data with available media files before encrypting it in your browser. The CSV is an Excel-ready flat ledger of every recorded trade.</p></div></div></div>
+        <div className="mt-3 flex items-start gap-3 rounded-xl border border-[#3e391f] bg-[#0b0c09] p-4"><Download className="mt-0.5 h-4 w-4 shrink-0 text-[#dba71d]" /><p className="text-xs leading-5 text-[#9e9a8f]">Use a unique password and keep it outside GitHub. Save the encrypted archive in your separate private archive repository. The archive includes a report if any linked media file cannot be reached while it is being created.</p></div>
       </div>
     </section>
   </div>;

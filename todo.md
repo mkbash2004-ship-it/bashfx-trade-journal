@@ -65,3 +65,8 @@
 - [x] Add authenticated server-side backup procedures and regression tests that enforce per-user data isolation.
 - [x] Confirm through the signed-in trader’s mobile session that the published Backup & Export page renders and the full JSON backup downloads successfully.
 - [x] Connect the Bashfx VIP GOLD ROOM project to the user's GitHub account and verify the code repository export.
+- [x] Add a concise README with project setup, source-code scope, and backup instructions.
+- [ ] Verify the documented commit-based GitHub sync hook pushes a post-install project commit to the private source repository.
+- [x] Create a separate private GitHub repository for password-encrypted journal-data and media backup archives.
+- [x] Add a user-controlled encrypted backup export that never sends the encryption password to the server or stores readable journal data in the source repository.
+- [ ] Confirm that the signed-in user can create an encrypted archive and place it in the separate private GitHub archive repository.
