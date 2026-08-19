@@ -1,6 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { GITHUB_ARCHIVE_UPLOAD_STEPS, GITHUB_ARCHIVE_UPLOAD_URL } from "@/lib/backupArchiveDestination";
+import { createEncryptedArchiveFilename, GITHUB_ARCHIVE_UPLOAD_STEPS, GITHUB_ARCHIVE_UPLOAD_URL } from "@/lib/backupArchiveDestination";
 import { createEncryptedBackupArchive } from "@/lib/encryptedBackup";
 import { trpc } from "@/lib/trpc";
 import { Archive, CheckCircle2, Database, Download, ExternalLink, FileJson, FileKey, FileSpreadsheet, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
@@ -75,7 +75,7 @@ export default function BackupExport() {
     setIsEncrypting(true);
     try {
       const archive = await createEncryptedBackupArchive(backup.data, backupPassword);
-      const filename = `bashfx-vip-gold-room-encrypted-backup-${fileDate}.bashfx-backup.json`;
+      const filename = createEncryptedArchiveFilename(new Date());
       const url = URL.createObjectURL(archive.blob);
       const link = document.createElement("a");
       link.href = url;
