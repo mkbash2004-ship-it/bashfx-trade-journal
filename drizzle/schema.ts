@@ -135,6 +135,25 @@ export const journalReminderSettings = mysqlTable("journalReminderSettings", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+export const backupReminderSettings = mysqlTable("backupReminderSettings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  enabled: int("enabled").notNull().default(0),
+  timezone: varchar("timezone", { length: 64 }).notNull().default("WAT"),
+  reminderTime: varchar("reminderTime", { length: 5 }).notNull().default("09:00"),
+  reminderTaskUid: varchar("reminderTaskUid", { length: 65 }),
+  lastReminderSentAt: timestamp("lastReminderSentAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const encryptedBackupArchives = mysqlTable("encryptedBackupArchives", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export const feedbackEntries = mysqlTable("feedbackEntries", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -153,4 +172,6 @@ export type WeeklySummary = typeof weeklySummaries.$inferSelect;
 export type MonthlySummary = typeof monthlySummaries.$inferSelect;
 export type MonthlySummaryAutomation = typeof monthlySummaryAutomation.$inferSelect;
 export type JournalReminderSettings = typeof journalReminderSettings.$inferSelect;
+export type BackupReminderSettings = typeof backupReminderSettings.$inferSelect;
+export type EncryptedBackupArchive = typeof encryptedBackupArchives.$inferSelect;
 export type FeedbackEntry = typeof feedbackEntries.$inferSelect;

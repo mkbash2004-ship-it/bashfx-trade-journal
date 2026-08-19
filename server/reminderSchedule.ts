@@ -38,3 +38,19 @@ export function buildReminderJobs(times: ReminderTimes) {
     { kind: "saturday" as const, cron: utcPlusOneCron(times.saturday, 6), label: `Saturday ${times.saturday} WAT weekly-summary follow-up` },
   ];
 }
+
+/** Builds a first-of-month WAT schedule. Times before 01:00 WAT are rejected because they fall in the prior UTC month. */
+export function utcPlusOneMonthlyCron(time: string, dayOfMonth = 1) {
+  const { hours, minutes } = parseTime(time);
+  if (hours === 0) throw new Error("Monthly reminder times must be 01:00 WAT or later");
+  return `0 ${minutes} ${hours - 1} ${dayOfMonth} * *`;
+}
+
+export const defaultBackupReminderTime = "09:00";
+
+export function buildBackupReminderSchedule(time = defaultBackupReminderTime) {
+  return {
+    cron: utcPlusOneMonthlyCron(time),
+    label: `Monthly ${time} WAT encrypted-backup reminder on the first day of each month`,
+  };
+}

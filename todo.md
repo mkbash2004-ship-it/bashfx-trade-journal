@@ -72,3 +72,8 @@
 - [x] Add an in-app self-service handoff to the private GitHub archive repository so the user can upload future encrypted archives without agent intervention.
 - [x] Re-test the self-service flow with a newly named encrypted archive and verify a distinct upload appears in the private GitHub archive repository.
 - [x] Upload the user-provided encrypted archive file to the separate private GitHub archive repository and verify its presence without opening it.
+- [x] Add the approved automatic monthly encrypted-backup reminder for 09:00 WAT on the first day of each month, with configurable timing and activation controls.
+- [x] Add a clear encrypted-archive restore guide that explains recovery without exposing the encryption password.
+- [x] Add a private backup-history card that records the latest locally created encrypted archive date.
+- [ ] Test, verify, and publish the backup reminder, restore guide, and history-card features.
+- [ ] Enable the monthly encrypted-backup reminder in the signed-in trader session and verify the active 09:00 WAT schedule.

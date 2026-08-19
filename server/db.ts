@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { dailyJournals, feedbackEntries, InsertUser, journalReminderSettings, monthlySummaries, monthlySummaryAutomation, tradeDocuments, trades, users, weeklySummaries } from "../drizzle/schema";
+import { backupReminderSettings, dailyJournals, encryptedBackupArchives, feedbackEntries, InsertUser, journalReminderSettings, monthlySummaries, monthlySummaryAutomation, tradeDocuments, trades, users, weeklySummaries } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -345,6 +345,73 @@ export async function clearJournalReminderSent(taskUid: string, kind: "daily" | 
   if (!db) throw new Error("Database unavailable");
   const values = kind === "daily" ? { lastDailyReminderSentAt: null } : kind === "friday" ? { lastFridayReminderSentAt: null } : { lastSaturdayReminderSentAt: null };
   await db.update(journalReminderSettings).set(values).where(eq(journalReminderSettings.id, settings.id));
+}
+
+export async function getBackupReminderSettings(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return (await db.select().from(backupReminderSettings).where(eq(backupReminderSettings.userId, userId)).limit(1))[0];
+}
+
+export async function saveBackupReminderSettings(input: {
+  userId: number;
+  enabled: number;
+  timezone: string;
+  reminderTime: string;
+  reminderTaskUid?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.insert(backupReminderSettings).values(input).onDuplicateKeyUpdate({
+    set: {
+      enabled: input.enabled,
+      timezone: input.timezone,
+      reminderTime: input.reminderTime,
+      reminderTaskUid: input.reminderTaskUid ?? null,
+    },
+  });
+  return getBackupReminderSettings(input.userId);
+}
+
+export async function getBackupReminderSettingsByTaskUid(taskUid: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return (await db.select().from(backupReminderSettings).where(eq(backupReminderSettings.reminderTaskUid, taskUid)).limit(1))[0];
+}
+
+export async function markBackupReminderSent(taskUid: string) {
+  const settings = await getBackupReminderSettingsByTaskUid(taskUid);
+  if (!settings) return { sent: false, reason: "orphan" as const };
+  if (settings.lastReminderSentAt && Date.now() - settings.lastReminderSentAt.getTime() < 5 * 60 * 1000) return { sent: false, reason: "recently-sent" as const };
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.update(backupReminderSettings).set({ lastReminderSentAt: new Date() }).where(eq(backupReminderSettings.id, settings.id));
+  return { sent: true, reason: "sent" as const, settings };
+}
+
+export async function clearBackupReminderSent(taskUid: string) {
+  const settings = await getBackupReminderSettingsByTaskUid(taskUid);
+  if (!settings) return;
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.update(backupReminderSettings).set({ lastReminderSentAt: null }).where(eq(backupReminderSettings.id, settings.id));
+}
+
+export async function recordEncryptedBackupArchive(userId: number, fileName: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.insert(encryptedBackupArchives).values({ userId, fileName });
+  return getEncryptedBackupArchives(userId);
+}
+
+export async function getEncryptedBackupArchives(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return db.select({ id: encryptedBackupArchives.id, fileName: encryptedBackupArchives.fileName, createdAt: encryptedBackupArchives.createdAt })
+    .from(encryptedBackupArchives)
+    .where(eq(encryptedBackupArchives.userId, userId))
+    .orderBy(desc(encryptedBackupArchives.createdAt), desc(encryptedBackupArchives.id))
+    .limit(8);
 }
 
 // Kept for source-document history created before the questionnaire revision.

@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { createEncryptedArchiveFilename, GITHUB_ARCHIVE_UPLOAD_STEPS, GITHUB_ARCHIVE_UPLOAD_URL } from "@/lib/backupArchiveDestination";
 import { createEncryptedBackupArchive } from "@/lib/encryptedBackup";
 import { trpc } from "@/lib/trpc";
-import { Archive, CheckCircle2, Database, Download, ExternalLink, FileJson, FileKey, FileSpreadsheet, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { Archive, BellRing, CheckCircle2, Clock3, Database, Download, ExternalLink, FileJson, FileKey, FileSpreadsheet, History, KeyRound, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 
 type ExportRow = Record<string, unknown>;
 
@@ -53,11 +53,23 @@ function dayStamp(value: Date) {
 export default function BackupExport() {
   const { isAuthenticated } = useAuth();
   const backup = trpc.journal.backupExport.useQuery(undefined, { enabled: isAuthenticated, staleTime: 0 });
+  const backupSupport = trpc.journal.backupSupportStatus.useQuery(undefined, { enabled: isAuthenticated, staleTime: 0 });
+  const utils = trpc.useUtils();
+  const recordArchive = trpc.journal.recordEncryptedBackupArchive.useMutation({ onSuccess: () => backupSupport.refetch() });
+  const configureBackupReminder = trpc.journal.configureBackupReminder.useMutation({ onSuccess: () => backupSupport.refetch() });
   const [backupPassword, setBackupPassword] = useState("");
   const [encryptionMessage, setEncryptionMessage] = useState<string | null>(null);
   const [isEncrypting, setIsEncrypting] = useState(false);
+  const [reminderTime, setReminderTime] = useState("09:00");
+  const [reminderMessage, setReminderMessage] = useState<string | null>(null);
   const exportedAt = backup.data?.exportedAt ? new Date(backup.data.exportedAt) : new Date();
   const fileDate = dayStamp(exportedAt);
+  const archiveHistory = backupSupport.data?.archiveHistory ?? [];
+  const reminderSettings = backupSupport.data?.settings;
+
+  useEffect(() => {
+    if (reminderSettings?.reminderTime) setReminderTime(reminderSettings.reminderTime);
+  }, [reminderSettings?.reminderTime]);
 
   const downloadJson = () => {
     if (!backup.data) return;
@@ -84,12 +96,24 @@ export default function BackupExport() {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
+      await recordArchive.mutateAsync({ fileName: filename });
       setBackupPassword("");
       setEncryptionMessage(archive.media.failed.length ? `Encrypted archive downloaded with ${archive.media.included} media file(s). ${archive.media.failed.length} file(s) were recorded in the media report because they could not be downloaded.` : `Encrypted archive downloaded with ${archive.media.included} media file(s). Use the private GitHub upload button below to store this one file.`);
     } catch (error) {
       setEncryptionMessage(error instanceof Error ? error.message : "The encrypted archive could not be created. Please try again.");
     } finally {
       setIsEncrypting(false);
+    }
+  };
+
+  const saveBackupReminder = async (enabled: boolean) => {
+    setReminderMessage(null);
+    try {
+      const saved = await configureBackupReminder.mutateAsync({ enabled, reminderTime });
+      await utils.journal.backupSupportStatus.invalidate();
+      setReminderMessage(saved.enabled ? `Monthly reminder active for the 1st day of each month at ${saved.reminderTime} WAT.` : "Monthly encrypted-backup reminder paused. Your archive history is unchanged.");
+    } catch (error) {
+      setReminderMessage(error instanceof Error ? error.message : "Backup reminder settings could not be saved.");
     }
   };
 
@@ -126,6 +150,14 @@ export default function BackupExport() {
             </ol>
             <Button asChild variant="outline" className="mt-3 h-10 w-full border-[#705d25] bg-transparent text-xs font-semibold text-[#eaca61] hover:bg-[#dba71d]/10 hover:text-[#ffe9a6]"><a href={GITHUB_ARCHIVE_UPLOAD_URL} target="_blank" rel="noreferrer"><ExternalLink className="mr-2 h-4 w-4" />Open private GitHub upload</a></Button>
           </div>
+          <div className="mt-4 rounded-xl border border-[#534a22] bg-[#11120d] p-4">
+            <div className="flex items-start gap-3"><BellRing className="mt-0.5 h-4 w-4 shrink-0 text-[#e6bf50]" /><div><p className="text-sm font-semibold text-[#eee8d3]">Monthly encrypted-backup reminder</p><p className="mt-1 text-xs leading-5 text-[#aaa79a]">A private reminder prompts you to create a fresh archive on the first day of every month.</p></div></div>
+            <div className="mt-4 flex gap-2"><input value={reminderTime} onChange={event => setReminderTime(event.target.value)} type="time" min="01:00" max="23:59" className="h-10 min-w-0 flex-1 rounded-lg border border-[#54481e] bg-[#13140e] px-3 text-sm text-[#f2ecda] outline-none focus:border-[#e2b43e]" /><span className="flex items-center text-xs font-semibold text-[#c7c0a4]">WAT · 1st</span></div>
+            <div className="mt-3 grid grid-cols-2 gap-2"><Button disabled={configureBackupReminder.isPending || !backupSupport.data?.canActivate} variant="outline" onClick={() => saveBackupReminder(Boolean(reminderSettings?.enabled))} className="h-10 border-[#705d25] bg-transparent text-xs font-semibold text-[#eaca61] hover:bg-[#dba71d]/10 hover:text-[#ffe9a6]"><Clock3 className="mr-2 h-4 w-4" />Save time</Button><Button disabled={configureBackupReminder.isPending || !backupSupport.data?.canActivate} onClick={() => saveBackupReminder(true)} className="h-10 bg-[#dba71d] text-xs font-bold text-[#170f03] hover:bg-[#f3ce66]"><BellRing className="mr-2 h-4 w-4" />{reminderSettings?.enabled ? "Update active" : "Enable"}</Button></div>
+            {reminderSettings?.enabled ? <Button disabled={configureBackupReminder.isPending} variant="ghost" onClick={() => saveBackupReminder(false)} className="mt-2 h-9 w-full text-xs text-[#bdb7a7] hover:bg-[#dba71d]/10 hover:text-[#f3ce66]">Pause reminder</Button> : null}
+            {!backupSupport.data?.canActivate && <p className="mt-3 text-xs leading-5 text-[#bcb49b]">Publish this app before automatic reminders can be enabled.</p>}
+            {reminderMessage && <p className="mt-3 text-xs leading-5 text-[#d9cfb3]" role="status">{reminderMessage}</p>}
+          </div>
         </div>
         <Button disabled={backup.isFetching} variant="ghost" onClick={() => backup.refetch()} className="mt-3 h-10 w-full text-xs text-[#aaa79a] hover:bg-[#dba71d]/10 hover:text-[#f3ce66]">{backup.isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}Refresh export data</Button>
       </div>
@@ -144,6 +176,10 @@ export default function BackupExport() {
         </div>
         <div className="mt-6 rounded-xl border border-[#4a421e] bg-[#15150e] p-4"><div className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#e6bf50]" /><div><p className="text-sm font-semibold text-[#eee8d3]">What your complete backup includes</p><p className="mt-1 text-xs leading-5 text-[#aaa79a]">The JSON archive includes every trade field, daily review, Trader Name, reminder preferences, and download links for generated weekly/monthly reports and original trade files. The encrypted archive packages this journal data with available media files before encrypting it in your browser. The CSV is an Excel-ready flat ledger of every recorded trade.</p></div></div></div>
         <div className="mt-3 flex items-start gap-3 rounded-xl border border-[#3e391f] bg-[#0b0c09] p-4"><Download className="mt-0.5 h-4 w-4 shrink-0 text-[#dba71d]" /><p className="text-xs leading-5 text-[#9e9a8f]">Use a unique password and keep it outside GitHub. Save the encrypted archive in your separate private archive repository. The archive includes a report if any linked media file cannot be reached while it is being created.</p></div>
+        <section className="mt-3 grid gap-3 md:grid-cols-2">
+          <div className="rounded-xl border border-[#4a421e] bg-[#15150e] p-4"><div className="flex items-start gap-3"><History className="mt-0.5 h-4 w-4 shrink-0 text-[#e6bf50]" /><div><p className="text-sm font-semibold text-[#eee8d3]">Backup history</p><p className="mt-1 text-xs leading-5 text-[#aaa79a]">This private history records archives created from this signed-in journal. It does not include a password or file contents.</p></div></div>{archiveHistory.length ? <div className="mt-3 space-y-2">{archiveHistory.slice(0, 3).map(archive => <div key={archive.id} className="rounded-lg border border-[#3e391f] bg-[#0b0c09] px-3 py-2"><p className="truncate text-xs font-semibold text-[#e9d48e]">{archive.fileName}</p><p className="mt-1 text-[11px] text-[#99927e]">Created {new Date(archive.createdAt).toLocaleString("en-GB", { timeZone: "Africa/Lagos", dateStyle: "medium", timeStyle: "short" })} WAT</p></div>)}</div> : <p className="mt-3 text-xs leading-5 text-[#aaa79a]">No encrypted archive has been created from this journal yet.</p>}</div>
+          <div className="rounded-xl border border-[#4a421e] bg-[#15150e] p-4"><div className="flex items-start gap-3"><KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-[#e6bf50]" /><div><p className="text-sm font-semibold text-[#eee8d3]">Restore guide</p><p className="mt-1 text-xs leading-5 text-[#aaa79a]">Keep both the encrypted file and its password. They are required together.</p></div></div><ol className="mt-3 list-decimal space-y-1 pl-4 text-xs leading-5 text-[#b5af9d]"><li>Download the `.bashfx-backup.json` archive from your private GitHub repository.</li><li>Use the same password you entered when creating the archive.</li><li>Contact support with the encrypted file only if you need recovery help; never share the password in a message.</li></ol></div>
+        </section>
       </div>
     </section>
   </div>;
