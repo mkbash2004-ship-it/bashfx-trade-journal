@@ -1,8 +1,9 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { GITHUB_ARCHIVE_UPLOAD_STEPS, GITHUB_ARCHIVE_UPLOAD_URL } from "@/lib/backupArchiveDestination";
 import { createEncryptedBackupArchive } from "@/lib/encryptedBackup";
 import { trpc } from "@/lib/trpc";
-import { Archive, CheckCircle2, Database, Download, FileJson, FileKey, FileSpreadsheet, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { Archive, CheckCircle2, Database, Download, ExternalLink, FileJson, FileKey, FileSpreadsheet, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
 type ExportRow = Record<string, unknown>;
@@ -84,7 +85,7 @@ export default function BackupExport() {
       link.remove();
       URL.revokeObjectURL(url);
       setBackupPassword("");
-      setEncryptionMessage(archive.media.failed.length ? `Encrypted archive downloaded with ${archive.media.included} media file(s). ${archive.media.failed.length} file(s) were recorded in the media report because they could not be downloaded.` : `Encrypted archive downloaded with ${archive.media.included} media file(s). Upload this one file to your separate private GitHub archive repository.`);
+      setEncryptionMessage(archive.media.failed.length ? `Encrypted archive downloaded with ${archive.media.included} media file(s). ${archive.media.failed.length} file(s) were recorded in the media report because they could not be downloaded.` : `Encrypted archive downloaded with ${archive.media.included} media file(s). Use the private GitHub upload button below to store this one file.`);
     } catch (error) {
       setEncryptionMessage(error instanceof Error ? error.message : "The encrypted archive could not be created. Please try again.");
     } finally {
@@ -118,6 +119,13 @@ export default function BackupExport() {
           <input value={backupPassword} onChange={event => setBackupPassword(event.target.value)} type="password" minLength={12} autoComplete="new-password" placeholder="Create a private backup password (12+ characters)" className="mt-4 h-11 w-full rounded-lg border border-[#54481e] bg-[#13140e] px-3 text-sm text-[#f2ecda] outline-none placeholder:text-[#777260] focus:border-[#e2b43e]" />
           <Button disabled={!backup.data || isEncrypting || backupPassword.trim().length < 12} onClick={downloadEncryptedArchive} className="mt-3 h-11 w-full bg-[#dba71d] font-bold text-[#170f03] hover:bg-[#f3ce66] disabled:opacity-50">{isEncrypting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileKey className="mr-2 h-4 w-4" />}Create encrypted archive</Button>
           {encryptionMessage && <p className="mt-3 text-xs leading-5 text-[#c6c0ac]" role="status">{encryptionMessage}</p>}
+          <div className="mt-4 rounded-lg border border-[#4a421e] bg-[#12130e] p-3">
+            <p className="text-xs font-semibold text-[#f0c95e]">Upload it yourself to your private GitHub archive</p>
+            <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs leading-5 text-[#aaa79a]">
+              {GITHUB_ARCHIVE_UPLOAD_STEPS.map(step => <li key={step}>{step}</li>)}
+            </ol>
+            <Button asChild variant="outline" className="mt-3 h-10 w-full border-[#705d25] bg-transparent text-xs font-semibold text-[#eaca61] hover:bg-[#dba71d]/10 hover:text-[#ffe9a6]"><a href={GITHUB_ARCHIVE_UPLOAD_URL} target="_blank" rel="noreferrer"><ExternalLink className="mr-2 h-4 w-4" />Open private GitHub upload</a></Button>
+          </div>
         </div>
         <Button disabled={backup.isFetching} variant="ghost" onClick={() => backup.refetch()} className="mt-3 h-10 w-full text-xs text-[#aaa79a] hover:bg-[#dba71d]/10 hover:text-[#f3ce66]">{backup.isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}Refresh export data</Button>
       </div>
