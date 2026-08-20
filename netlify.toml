@@ -1,0 +1,14 @@
+[build]
+  command = "pnpm build:netlify"
+  publish = "dist/public"
+
+[build.environment]
+  NODE_VERSION = "22"
+  PNPM_VERSION = "10.4.1"
+
+# The React application owns client-side routing. The API proxy must be added
+# after a separate backend URL is available; do not redirect /api/* to the SPA.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
